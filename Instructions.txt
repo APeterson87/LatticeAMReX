@@ -1,0 +1,40 @@
+Instructions for running simulations using AMReX.
+
+1. Clone LatticeAMReX repo using: git clone https://github.com/APeterson87/LatticeAMReX.git
+
+2. Download my version of amrex using: git clone https://github.com/APeterson87/amrex.git
+   Check that you have all of the requirements for amrex from https://amrex-codes.github.io/amrex/docs_html/BuildingAMReX_Chapter.html?highlight=requirements
+
+3. cd into /amrex directory, and switch to 'hork' branch.
+
+4. cd into LatticeAMReX/Exec/
+
+5. Pick a problem to simulate, either Ising or Schwinger.
+
+6. In GNUmakefile set AMREX_HOME to your path to the amrex.  Enable MPI and/or OPENMP as you wish.
+
+7. Run: make -j to build the exectutable.
+
+8. Set parameters of the simulation:
+   Set the number of update steps max_step.
+   Set the temperature of the simulation in the inputs file under Temp_T.
+   Set number of cells in each direction in amr.n_cell.  First number is for x-direction, second is for y-direction.
+   Set the interval for writing plotfiles, diagnostic plotfiles, and checkpoint files in amr.plot_int, amr.diag_int, and amr.chk_int respectively.
+    
+   If you want to start a simulation from a previous checkpoint, uncomment amr.restart and set it to the checkpoint filename.  
+   Also uncomment amr.restart_is_initial_data and set it to 0.
+    
+    
+   All other parameters are irrelevant for this problem.  They determine things like domain size, finite differencing spacing etc.  Also they will become important when amr is enabled.
+
+9. Run the executable: mpirun -n 4 ./main2d.gnu.MPI.ex  (if mpi enabled).  This will run the simulation and generate plotfiles, diagnostic plotfiles, and checkpoint files at the intervals specified in the inputs.
+
+10. You can view the state of the system by viewing the plotfiles and diagnostic plotfiles using the provided IPython scripts in a jupyter notebook.  You will need to download the yt package at https://yt-project.org/ .  You may also need to use an earlier version of numpy (1.20.3 is the latest version known to work with yt).
+
+   The plotfiles contain the variables to be evolved in the MCMC process.  For Ising these would be the individual spins s(i, j).  For the Schwinger model in pure gauge, these would be the real and imaginary parts of the link variables U(i, j).
+    
+   The diagnostic files contain derived quantites like energy density.
+    
+11. You can make adjustments to the algorithms and field manipulations in the LatticeAMReX/Source directories.  E.g., for the Ising model, the spin field s(i, j) is initialized in the Source/Ising/ET_Integration_Init_K.H, and MCMC is performed in Source/ET_Integration_Post_Update_K.H.  Calculations of diagnostic quantities like energy density are calculated in Source/ET_Integration_Diag_K.H.
+    
+   If you wish to add new quantites to plot from the spin field s(i, j) you will need to update the enum DiagnosticIndexes in ET_Integration_Setup_K.H, and add the new field name in ET_Integration_Diagnostic_Variables_K.H.
