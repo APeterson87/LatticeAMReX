@@ -209,6 +209,8 @@ private:
     // maximum number of steps and stop time
     int max_step = std::numeric_limits<int>::max();
     amrex::Real stop_time = std::numeric_limits<amrex::Real>::max();
+    
+    amrex::Real Temp_T = 0.5;
 
     // if >= 0 we restart from a checkpoint
     std::string restart_chkfile = "";

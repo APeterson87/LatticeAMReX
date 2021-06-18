@@ -334,6 +334,7 @@ AmrCoreAdv::ReadParameters ()
         ParmParse pp;  // Traditionally, max_step and stop_time do not have prefix.
         pp.query("max_step", max_step);
         pp.query("stop_time", stop_time);
+        pp.get("Temp_T", Temp_T);
 
         // Query domain periodicity
         pp.getarr("domain_lo_bc_types", domain_lo_bc_types);
@@ -1205,7 +1206,7 @@ void AmrCoreAdv::post_update (MultiFab& state_mf, const amrex::Real time, const 
     amrex::ParallelFor(bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        state_post_update(i, j, k, state_fab, time, dx, geom.data());
+        state_post_update(i, j, k, state_fab, time, dx, geom.data(), Temp_T);
     });
   }
 }
