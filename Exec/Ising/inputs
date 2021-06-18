@@ -1,7 +1,7 @@
 # Stopping Criteria 
 max_step = 1000
 stop_time = 2000000.0
-Temp_T = 2.0 #T_crit = 2.3ish
+Temp_T = 2.0 #T_crit = 2.7ish
 
 # Problem Size & Geometry 
 amr.n_cell = 512 512
