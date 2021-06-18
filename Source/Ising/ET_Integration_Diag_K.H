@@ -21,6 +21,14 @@ state_diagnostics(int i, int j, int k,
         amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1]; 
         amrex::Real x2 = (k + 0.5)*geom.CellSize(2) + domain_xlo[2]; 
         
+        amrex::Real s = state_fab(i, j, k, Idx::s);
+        amrex::Real sup = state_fab(i, j+1, k, Idx::s);
+        amrex::Real sdown = state_fab(i, j-1, k, Idx::s);
+        amrex::Real sleft = state_fab(i-1, j, k, Idx::s);
+        amrex::Real sright = state_fab(i+1, j, k, Idx::s);
+        
+        diag(i, j, k, Diag::Edensity) = -s*(sup+sdown+sleft+sright);  
+        
 
 }
 #endif

@@ -13,7 +13,7 @@ namespace InitIdx {
 };
 
 namespace Diag { 
-         enum DiagnosticIndexes {NumScalars}; 
+         enum DiagnosticIndexes {Edensity, NumScalars}; 
 };
 
 #define NUM_GHOST_CELLS 1
