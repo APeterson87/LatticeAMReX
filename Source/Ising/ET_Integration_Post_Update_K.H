@@ -12,13 +12,10 @@ state_post_update(int i, int j, int k,
         amrex::Array4<amrex::Real> const& state_fab,
         const amrex::Real time,
         amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dx,
-        const amrex::GeometryData& geom) noexcept 
+        const amrex::GeometryData& geom,
+        const amrex::Real Temp_T) noexcept 
 {
-        const auto domain_xlo = geom.ProbLo();
-        
-        amrex::Real x0 = (i + 0.5)*geom.CellSize(0) + domain_xlo[0]; 
-        amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1]; 
-        amrex::Real x2 = (k + 0.5)*geom.CellSize(2) + domain_xlo[2];   
+        const auto domain_xlo = geom.ProbLo();  
         
         amrex::Real s = state_fab(i, j, k, Idx::s);
         amrex::Real sup = state_fab(i, j+1, k, Idx::s);
@@ -26,14 +23,17 @@ state_post_update(int i, int j, int k,
         amrex::Real sleft = state_fab(i-1, j, k, Idx::s);
         amrex::Real sright = state_fab(i+1, j, k, Idx::s);
         
-        amrex::Real deltaU = 2*s*(sup+sdown+sleft+sright);
+        //Get the energy difference from a flip of s(i, j)
+        amrex::Real deltaU = 2*s*(sup+sdown+sleft+sright);  
         
-        amrex::Real T = 4.0;
         
-        amrex::Real Pdens = std::exp(-deltaU/T);
+        //Calculate the change in probability density for flipping s(i, j)
+        amrex::Real Pdens = std::exp(-deltaU/Temp_T);  
         
-        if (amrex::Random() < 0.1)
+        if (amrex::Random() < 0.1)  //Only about 10% of s(i,j) are considered candidates.  Otherwise strange effects occur.
         {
+        
+            //Metropolis MCMC step
             if (deltaU <= 0)
                 state_fab(i, j, k, Idx::s) *= -1;
             else
@@ -42,9 +42,6 @@ state_post_update(int i, int j, int k,
                     state_fab(i, j, k, Idx::s) *= -1;
             }
         }
-        
-        //state_fab(i, j, k, Idx::s) *= (1-2*((deltaU <= 0) || (amrex::Random() < Pdens)));
-
 
 }
 #endif
