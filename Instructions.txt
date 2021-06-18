@@ -9,7 +9,7 @@ Instructions for running simulations using AMReX.
 
 4. cd into LatticeAMReX/Exec/
 
-5. Pick a problem to simulate, either Ising or Schwinger.
+5. Pick a problem to simulate, either Ising or Schwinger and cd into the directory.
 
 6. In GNUmakefile set AMREX_HOME to your path to the amrex.  Enable MPI and/or OPENMP as you wish.
 
