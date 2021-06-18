@@ -1,7 +1,7 @@
 # Stopping Criteria 
 max_step = 1000
 stop_time = 2000000.0
-Temp_T = 0.5
+Temp_T = 5
 
 # Problem Size & Geometry 
 amr.n_cell = 512 512
@@ -16,10 +16,10 @@ amr.v = 1
 
 # Refinement Parameters 
 amr.max_level = 0
-amr.max_grid_size = 256
+amr.max_grid_size = 128
 amr.ref_ratio = 2
 amr.n_error_buf = 1
-amr.blocking_factor = 8
+amr.blocking_factor = 64
 amr.regrid_int = 1
 
 # AMR Interpolation 
@@ -43,7 +43,7 @@ amr.diag_int = 100
 amr.chk_int = 100
 
 # Restart from checkpoint or use as initial condition? 
-#amr.restart = chk0000100
+#amr.restart = chk0001000
 #amr.restart_is_initial_data = 0
 
 ## integration.type can take on the following values: 
