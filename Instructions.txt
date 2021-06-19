@@ -27,7 +27,7 @@ Instructions for running simulations using AMReX.
     
    All other parameters are irrelevant for this problem.  They determine things like domain size, finite differencing spacing etc.  Also they will become important when amr is enabled.
 
-9. Run the executable: mpirun -n 4 ./main2d.gnu.MPI.ex  (if mpi enabled).  This will run the simulation and generate plotfiles, diagnostic plotfiles, and checkpoint files at the intervals specified in the inputs.
+9. Run the executable: mpirun -n 4 ./main2d.gnu.MPI.ex inputs (if mpi enabled).  This will run the simulation and generate plotfiles, diagnostic plotfiles, and checkpoint files at the intervals specified in the inputs.
 
 10. You can view the state of the system by viewing the plotfiles and diagnostic plotfiles using the provided IPython scripts in a jupyter notebook.  You will need to download the yt package at https://yt-project.org/ .  You may also need to use an earlier version of numpy (1.20.3 is the latest version known to work with yt).
 
