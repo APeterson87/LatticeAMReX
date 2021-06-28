@@ -178,6 +178,8 @@ private:
     void fill_rhs (amrex::MultiFab& rhs_mf, const amrex::MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom);
     void fill_state_diagnostics (amrex::MultiFab& diag_mf, const amrex::MultiFab& state_mf, const amrex::Real time_lev, const amrex::Geometry& geom) const;
     ////////////////
+    
+    amrex::Real SumAction(amrex::MultiFab& state_mf);
     // private data members
 
     amrex::Vector<int> istep;      // which step?

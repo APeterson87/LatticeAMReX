@@ -707,6 +707,7 @@ AmrCoreAdv::Advance (int lev, Real time, Real dt_lev, int iteration, int ncycle)
     auto post_update_fun = [&](MultiFab& S_data, const Real time) {
         // Call user function to update state
         post_update(S_data, time, geom_lev);
+        SumAction(S_data);
 
         // Fill ghost cells for S_data from interior & periodic BCs
         // and from interpolating coarser data in space/time at the current stage time.
@@ -719,6 +720,8 @@ AmrCoreAdv::Advance (int lev, Real time, Real dt_lev, int iteration, int ncycle)
 
     // integrate forward one step to fill S_new
     integrator[lev]->advance(Sborder, S_new, time, dt_lev);
+    
+    
 }
 
 // a wrapper for EstTimeStep
@@ -1257,4 +1260,37 @@ void AmrCoreAdv::fill_state_diagnostics (MultiFab& diag_mf, const MultiFab& stat
       state_diagnostics(i, j, k, diag_fab, state_fab, time_lev, dx, geom.data());
     });
   }
+}
+
+Real AmrCoreAdv::SumAction (MultiFab& state_mf)
+{
+    
+    ReduceOps<ReduceOpSum> reduce_operations;
+    ReduceData<Real> reduce_data(reduce_operations);
+    using ReduceTuple = typename decltype(reduce_data)::Type;
+
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+
+  for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
+  {
+    const Box& bx = mfi.tilebox();
+    const auto ncomp = state_mf.nComp();
+
+    const auto& state_fab = state_mf.array(mfi); 
+
+    // For each grid, loop over all the valid points
+    reduce_operations.eval(bx, reduce_data,
+    [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
+    {
+        return {sum_action(i,j,k,state_fab)};
+    });
+  }
+    ReduceTuple reduced_values = reduce_data.value();
+    // MPI reduction
+    ParallelDescriptor::ReduceRealSum(amrex::get<0>(reduced_values));
+    Real action = amrex::get<0>(reduced_values);
+    
+    return action;
 }
