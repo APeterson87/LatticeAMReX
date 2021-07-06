@@ -1,25 +1,26 @@
-# Stopping Criteria 
+# Stopping Criteria
 max_step = 1000
 stop_time = 2000000.0
-Temp_T = 5
+n_substeps = 10
+Temp_T = 1.0
 
 # Problem Size & Geometry 
-amr.n_cell = 512 512
+amr.n_cell = 8 8
 
 geometry.is_periodic = 1 1 
 geometry.coord_sys = 0 
-geometry.prob_lo = -20.0 -20.0 #-20.9805 -20.9805 -20.9805 
-geometry.prob_hi = 20.0 20.0 #20.9805 20.9805 20.9805 
+geometry.prob_lo = -4.0 -4.0 #-20.9805 -20.9805 -20.9805 
+geometry.prob_hi = 4.0 4.0 #20.9805 20.9805 20.9805 
 
 # Turn on verbosity in amr 
 amr.v = 1
 
 # Refinement Parameters 
 amr.max_level = 0
-amr.max_grid_size = 64
+amr.max_grid_size = 8
 amr.ref_ratio = 2
 amr.n_error_buf = 1
-amr.blocking_factor = 64
+amr.blocking_factor = 8
 amr.regrid_int = 1
 
 # AMR Interpolation 
@@ -35,21 +36,22 @@ problem.error_comp = 0
 
 # Problem specific inputs 
 problem.elliptic = 0
-problem.cfl = 0.1
+problem.cfl = 1.0
+problem.epsilon = 0.1
 
 # Plotting steps 
 amr.plot_int = 100
 amr.diag_int = 100
-amr.chk_int = 100
+amr.chk_int = 1000
 
 # Restart from checkpoint or use as initial condition? 
-#amr.restart = chk0001000
+#amr.restart = chk0002000
 #amr.restart_is_initial_data = 0
 
 ## integration.type can take on the following values: 
 ## 0 = Forward Euler 
 ## 1 = Explicit Runge Kutta 
-integration.type = 1 
+integration.type = 0 
 
 ## Explicit Runge-Kuta parameters 
 # 
@@ -59,7 +61,7 @@ integration.type = 1
 ### 2 = Trapezoid Method
 ### 3 = SSPRK3 Method
 ### 4 = RK4 Method 
-integration.rk.type = 4
+integration.rk.type = 1
 
 ## If using a user-specified Butcher Tableau, then
 ## set nodes, weights, and table entries here:
