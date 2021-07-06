@@ -15,27 +15,24 @@ state_diagnostics(int i, int j, int k,
         amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dx, 
         const amrex::GeometryData& geom) noexcept 
 {
-        const auto domain_xlo = geom.ProbLo();
+        //const auto domain_xlo = geom.ProbLo();
         
-        amrex::Real x0 = (i + 0.5)*geom.CellSize(0) + domain_xlo[0]; 
-        amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1]; 
-        amrex::Real x2 = (k + 0.5)*geom.CellSize(2) + domain_xlo[2]; 
+        amrex::Real U1_r = state_fab(i, j, k, Idx::U_0_Real);
+        amrex::Real U1_i = state_fab(i, j, k, Idx::U_0_Imaginary);
         
-        amrex::Real theta_0_00 = std::acos(state_fab(i, j, k, Idx::U_0_Re));
-        amrex::Real theta_1_00 = std::acos(state_fab(i, j, k, Idx::U_1_Re));
-        amrex::Real theta_0_01 = std::acos(state_fab(i, j+1, k, Idx::U_0_Re));
-        amrex::Real theta_1_10 = std::acos(state_fab(i+1, j, k, Idx::U_1_Re));
+        amrex::Real U2_r = state_fab(i+1, j, k, Idx::U_1_Real);
+        amrex::Real U2_i = state_fab(i+1, j, k, Idx::U_1_Imaginary);
         
-        amrex::Real theta_plaq = theta_0_00 + theta_1_10 - theta_0_01 - theta_1_00;
+        amrex::Real U3_r = state_fab(i, j+1, k, Idx::U_0_Real);
+        amrex::Real U3_i = -state_fab(i, j+1, k, Idx::U_0_Imaginary);
         
-        diag(i, j, k, Diag::ActionDensity) = 1-std::cos(theta_plaq);
+        amrex::Real U4_r = state_fab(i, j, k, Idx::U_1_Real);
+        amrex::Real U4_i = -state_fab(i, j, k, Idx::U_1_Imaginary);
         
-        amrex::Real AbsU_0_sqrd = state_fab(i, j, k, Idx::U_0_Re)*state_fab(i, j, k, Idx::U_0_Re);
+        amrex::Real plaq_re = U1_i*U2_i*U3_i*U4_i - U1_i*U2_i*U3_r*U4_r - U1_i*U2_r*U3_i*U4_r - U1_i*U2_r*U3_r*U4_i - U1_r*U2_i*U3_i*U4_r - U1_r*U2_i*U3_r*U4_i - U1_r*U2_r*U3_i*U4_i + U1_r*U2_r*U3_r*U4_r;
         
-        amrex::Real AbsU_1_sqrd = state_fab(i, j, k, Idx::U_1_Re)*state_fab(i, j, k, Idx::U_1_Re);
+        diag(i, j, k, Diag::ActionDensity) = 1-plaq_re;
         
-        diag(i, j, k, Diag::AbsU_0_Re) = std::sqrt(AbsU_0_sqrd);
-        diag(i, j, k, Diag::AbsU_1_Re) = std::sqrt(AbsU_1_sqrd);
-
+        
 }
 #endif

@@ -13,18 +13,30 @@ state_init(int i, int j, int k,
         amrex::Real time, const amrex::GeometryData& geom) noexcept 
 {
         const auto domain_xlo = geom.ProbLo(); 
+
         
-        amrex::Real x0 = (i + 0.5)*geom.CellSize(0) + domain_xlo[0]; 
-        amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1]; 
-        amrex::Real x2 = (k + 0.5)*geom.CellSize(2) + domain_xlo[2];
+        amrex::Real theta_0 = 2*M_PI*(amrex::Random()-0.5);
+        amrex::Real theta_1 = 2*M_PI*(amrex::Random()-0.5);
         
-        amrex::Real theta_0 = 2*M_PI*amrex::Random();
-        amrex::Real theta_1 = 2*M_PI*amrex::Random();
+        amrex::Real P_0 = amrex::RandomNormal(0,1);
+        amrex::Real P_1 = amrex::RandomNormal(0,1);
         
-        state_fab(i, j, k, Idx::U_0_Re) = std::cos(theta_0);
-        state_fab(i, j, k, Idx::U_0_Im) = std::sin(theta_0);
-        state_fab(i, j, k, Idx::U_1_Re) = std::cos(theta_1);
-        state_fab(i, j, k, Idx::U_1_Im) = std::sin(theta_1);
+        state_fab(i, j, k, Idx::U_0_Real) = std::cos(theta_0);
+        state_fab(i, j, k, Idx::Ucurrent_0_Real) = std::cos(theta_0);
+        
+        state_fab(i, j, k, Idx::U_0_Imaginary) = std::sin(theta_0);
+        state_fab(i, j, k, Idx::Ucurrent_0_Imaginary) = std::sin(theta_0);
+        
+        state_fab(i, j, k, Idx::U_1_Real) = std::cos(theta_1);
+        state_fab(i, j, k, Idx::Ucurrent_1_Real) = std::cos(theta_1);
+        
+        state_fab(i, j, k, Idx::U_1_Imaginary) = std::sin(theta_1);
+        state_fab(i, j, k, Idx::Ucurrent_1_Imaginary) = std::sin(theta_1);
+        
+        state_fab(i, j, k, Idx::P_0) = P_0;
+        state_fab(i, j, k, Idx::Pcurrent_0) = P_0;
+        state_fab(i, j, k, Idx::P_1) = P_1;
+        state_fab(i, j, k, Idx::Pcurrent_1) = P_1;
         
 }
 #endif

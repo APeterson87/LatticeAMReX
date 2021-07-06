@@ -175,7 +175,8 @@ private:
 
     // Single level functions called by advance()
     void post_update (amrex::MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom);
-    void fill_rhs (amrex::MultiFab& rhs_mf, const amrex::MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom);
+    void MCMC_update (amrex::MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom, bool state_is_accepted);
+    void fill_rhs (amrex::MultiFab& rhs_mf, const amrex::MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom, amrex::Real factor);
     void fill_state_diagnostics (amrex::MultiFab& diag_mf, const amrex::MultiFab& state_mf, const amrex::Real time_lev, const amrex::Geometry& geom) const;
     ////////////////
     
@@ -210,7 +211,10 @@ private:
 
     // maximum number of steps and stop time
     int max_step = std::numeric_limits<int>::max();
+    
     amrex::Real stop_time = std::numeric_limits<amrex::Real>::max();
+    
+    int n_substeps = 10;
     
     amrex::Real Temp_T = 0.5;
 
@@ -223,6 +227,7 @@ private:
 
     // advective cfl number - dt = cfl*dx/umax
     amrex::Real cfl = 0.7;
+    amrex::Real epsilon = 0.1;
 
     // how often each level regrids the higher levels of refinement
     // (after a level advances that many time steps)

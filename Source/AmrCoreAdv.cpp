@@ -334,6 +334,7 @@ AmrCoreAdv::ReadParameters ()
         ParmParse pp;  // Traditionally, max_step and stop_time do not have prefix.
         pp.query("max_step", max_step);
         pp.query("stop_time", stop_time);
+        pp.query("n_substeps", n_substeps);
         pp.get("Temp_T", Temp_T);
 
         // Query domain periodicity
@@ -372,6 +373,7 @@ AmrCoreAdv::ReadParameters ()
 
         // Elliptic?
         pp.get("elliptic", elliptic);
+        pp.get("epsilon", epsilon);
     }
 }
 
@@ -687,9 +689,25 @@ AmrCoreAdv::Advance (int lev, Real time, Real dt_lev, int iteration, int ncycle)
 
     const Real old_time = t_old[lev];
     const Real new_time = t_new[lev];
+    
+    Real factor = epsilon;
+    Real deltaS;
+    
+    Real r = amrex::Random();
+    
+    if (istep[0]%n_substeps == 0)
+    {
+        factor = 0.5*epsilon;
+    }
+    else if (istep[0]%n_substeps == n_substeps - 2)
+    {
+        factor = 0.5*epsilon;
+    }
 
     std::swap(grid_old[lev], grid_new[lev]);
     MultiFab& S_new = grid_new[lev];
+    deltaS = SumAction(S_new);
+    
 
     // State with ghost cells as the integrator initial condition
     MultiFab Sborder(grids[lev], dmap[lev], S_new.nComp(), num_grow);
@@ -700,14 +718,41 @@ AmrCoreAdv::Advance (int lev, Real time, Real dt_lev, int iteration, int ncycle)
 
     // Create a RHS source function we will integrate
     auto source_fun = [&](MultiFab& rhs, const MultiFab& state, const Real time){
-        fill_rhs(rhs, state, time, geom_lev);
+        /*
+        if (istep[0]%n_substeps == 0)
+        {
+            //factor = 0.5*epsilon;
+            amrex::Print() << "Getting P_{1/2} from P_0 and Q_0 with Factor = " << factor << " \n";
+        }
+        else if (istep[0]%n_substeps == n_substeps - 2)
+        {
+            //factor = 0.5*epsilon;
+            amrex::Print() << "Getting P_{n-1} from P_{n-3/2} and Q_{n-1} with Factor = " << factor << " \n";
+        }
+        else if (istep[0]%n_substeps != n_substeps-1)
+            amrex::Print() << "Getting P_{k + 1/2} from P_{k-1/2} and Q_{k} with Factor = " << factor << " \n";
+        */
+        fill_rhs(rhs, state, time, geom_lev, factor);
     };
 
     // Create a function to call after updating a state
     auto post_update_fun = [&](MultiFab& S_data, const Real time) {
         // Call user function to update state
-        post_update(S_data, time, geom_lev);
-        SumAction(S_data);
+
+        if (istep[0]%n_substeps != n_substeps - 1)
+        {
+            post_update(S_data, time, geom_lev);
+            //amrex::Print() << "Getting Q_{k+1} from P_{k+1/2} and Q_{k} \n";
+        }
+        
+        
+        
+        else
+        {
+            MCMC_update(S_data, time, geom_lev, r < std::exp(-deltaS/Temp_T));
+            amrex::Print() << "Value: " << r << ", " << std::exp(-deltaS/Temp_T) << "\n";
+            //amrex::Print() << "Setting new Q from MCMC and P from gaussian random\n";
+        }
 
         // Fill ghost cells for S_data from interior & periodic BCs
         // and from interpolating coarser data in space/time at the current stage time.
@@ -1209,12 +1254,49 @@ void AmrCoreAdv::post_update (MultiFab& state_mf, const amrex::Real time, const 
     amrex::ParallelFor(bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        state_post_update(i, j, k, state_fab, time, dx, geom.data(), Temp_T);
+        state_post_update(i, j, k, state_fab, time, dx, geom.data(), Temp_T, epsilon);
     });
   }
 }
 
-void AmrCoreAdv::fill_rhs (MultiFab& rhs_mf, const MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom)
+void AmrCoreAdv::MCMC_update (MultiFab& state_mf, const amrex::Real time, const Geometry& geom, bool new_state_accepted)
+{
+    const auto dx = geom.CellSizeArray();
+    int ncomp = state_mf.nComp();
+    
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+  for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
+  {
+    const Box& bx = mfi.tilebox();
+    const auto ncomp = state_mf.nComp();
+
+    const auto& state_fab = state_mf.array(mfi);
+
+    // For each grid, loop over all the valid points
+    if (new_state_accepted == true)
+    {
+        amrex::Print() << new_state_accepted << " ACCEPTED \n";
+        amrex::ParallelFor(bx,
+        [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            state_MCMC_accepted(i, j, k, state_fab, time, dx, geom.data(), Temp_T);
+        });
+    }
+    else
+    {
+        amrex::Print() << new_state_accepted << " REJECTED \n";
+        amrex::ParallelFor(bx,
+        [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            state_MCMC_rejected(i, j, k, state_fab, time, dx, geom.data(), Temp_T);
+        });
+    }
+  }
+}
+
+void AmrCoreAdv::fill_rhs (MultiFab& rhs_mf, const MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom, amrex::Real factor)
 {
   const auto dx = geom.CellSizeArray();
 
@@ -1233,7 +1315,7 @@ void AmrCoreAdv::fill_rhs (MultiFab& rhs_mf, const MultiFab& state_mf, const amr
     amrex::ParallelFor(bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-      state_rhs(i, j, k, rhs_fab, state_fab, time, dx, geom.data());
+      state_rhs(i, j, k, rhs_fab, state_fab, time, dx, geom.data(), factor);
     });
   }
 }
