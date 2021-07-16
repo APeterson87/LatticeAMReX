@@ -101,6 +101,8 @@ private:
 
     // more flexible version of AverageDown() that lets you average down across multiple levels
     void AverageDownTo (int crse_lev);
+    
+    void FlipSigns(int lev, MultiFab& mf, int icomp, int ncomp);
 
     // compute a new multifab by coping in phi from valid region and filling ghost cells
     // works for single level and 2-level cases (fill fine grid ghost by interpolating from coarse)
@@ -124,10 +126,11 @@ private:
 
     // advance a level by dt
     // includes a recursive call for finer levels
-    void timeStep (int lev, amrex::Real time, int iteration);
+    void timeStep (int lev, amrex::Real time, int iteration, int &num_accepted);
 
     // advance a single level for a single time step
-    void Advance (int lev, amrex::Real time, amrex::Real dt_lev, int iteration, int ncycle);
+    void Advance (int lev, amrex::Real time, amrex::Real dt_lev, int iteration, int ncycle, int& num_accepted);
+    
 
     // a wrapper for EstTimeStep(0
     void ComputeDt ();
@@ -174,13 +177,29 @@ private:
     static void GotoNextLine (std::istream& is);
 
     // Single level functions called by advance()
-    void post_update (amrex::MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom);
-    void MCMC_update (amrex::MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom, bool state_is_accepted);
-    void fill_rhs (amrex::MultiFab& rhs_mf, const amrex::MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom, amrex::Real factor);
-    void fill_state_diagnostics (amrex::MultiFab& diag_mf, const amrex::MultiFab& state_mf, const amrex::Real time_lev, const amrex::Geometry& geom) const;
+    
+    void update_momentum (MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom, amrex::Real m_0, amrex::Real r , amrex::Real beta, amrex::Real dtau);
+    void update_gauge (MultiFab& state_mf, const amrex::Real time, const Geometry& geom, amrex::Real dtau);
+    
+    void Fermi_BiCG_solve(MultiFab& S_new, int lev, Real time, const amrex::Geometry& geom_lev, amrex::Real Threshold, int Max_Iter);
+    void ResetDDinvPhi(amrex::MultiFab& state_mf);
+    void Set_DDp(MultiFab& state_mf, const Geometry& geom, amrex::Real m_0, amrex::Real r);
+    void Set_DDinvPhi(MultiFab& state_mf, const Geometry& geom, amrex::Real alpha);
+    void Set_g3DinvPhi (MultiFab& state_mf, const Geometry& geom, amrex::Real m_0, amrex::Real r);
+    void Set_res(MultiFab& state_mf, const Geometry& geom, amrex::Real alpha);
+    void Set_p(MultiFab& state_mf, const Geometry& geom, amrex::Real beta);
+    void SetPhiFromChi(amrex::MultiFab& state_mf, amrex::Real m_0, amrex::Real r);
+    
+    void Perturb (amrex::MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom);
+    amrex::Real Action_Gauge(amrex::MultiFab& state_mf, amrex::Real beta);
+    amrex::Real Action_Fermi(amrex::MultiFab& state_mf);
+    amrex::Real Action_Fermi_From_Chi (MultiFab& state_mf);
+    
     ////////////////
     
-    amrex::Real SumAction(amrex::MultiFab& state_mf);
+    
+    void fill_state_diagnostics (amrex::MultiFab& diag_mf, const amrex::MultiFab& state_mf, const amrex::Real time_lev, const amrex::Geometry& geom) const;
+    
     // private data members
 
     amrex::Vector<int> istep;      // which step?
@@ -211,12 +230,19 @@ private:
 
     // maximum number of steps and stop time
     int max_step = std::numeric_limits<int>::max();
+    int num_therm_steps = 100;
     
     amrex::Real stop_time = std::numeric_limits<amrex::Real>::max();
     
     int n_substeps = 10;
     
-    amrex::Real Temp_T = 0.5;
+    amrex::Real coupling_beta = 1.0;
+    amrex::Real mass_0 = 0.1;
+    amrex::Real wilson_r = 1.0;
+    
+    amrex::Real Temp_T = 1.0;
+    amrex::Real BiCGThresh = 1e-5;
+    int BiCG_Max_Iter = 100;
 
     // if >= 0 we restart from a checkpoint
     std::string restart_chkfile = "";
