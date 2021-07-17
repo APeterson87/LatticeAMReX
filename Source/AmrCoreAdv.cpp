@@ -81,6 +81,8 @@ AmrCoreAdv::Evolve ()
     srand (static_cast <unsigned> (time(0)));
     
     int num_accepted = 0;
+    Real TimeSumAvePlaq = 0;
+    Real TimeSumDeltaH = 0;
 
     for (int step = istep[0]; step < max_step && cur_time < stop_time; ++step)
     {
@@ -91,7 +93,7 @@ AmrCoreAdv::Evolve ()
         int lev = 0;
         int iteration = 1;
 
-        timeStep(lev, cur_time, iteration, num_accepted);
+        timeStep(lev, cur_time, iteration, num_accepted, TimeSumAvePlaq, TimeSumDeltaH);
 
         cur_time += dt[0];
 
@@ -142,7 +144,11 @@ AmrCoreAdv::Evolve ()
         ComputeAndWriteDiagnosticFile();
     }
     
-    amrex::Print() << "\nFinal Acceptance Rate: " << static_cast<float>(num_accepted)/static_cast<float>(max_step-num_therm_steps) << std::endl;
+    amrex::Print() << "\nFinal Acceptance Rate = " << static_cast<float>(num_accepted)/static_cast<float>(max_step-num_therm_steps) << std::endl;
+    
+    amrex::Print() << "\nTime average Plaq = " << TimeSumAvePlaq/static_cast<float>(max_step-num_therm_steps) << std::endl;
+    
+    amrex::Print() << "\nTime average deltaH = " << TimeSumDeltaH/static_cast<float>(max_step-num_therm_steps) << std::endl;
 }
 
 // initializes multilevel data
@@ -351,6 +357,8 @@ AmrCoreAdv::ReadParameters ()
         pp.get("Temp_T", Temp_T);
         pp.get("BiCGThresh", BiCGThresh);
         pp.get("BiCG_Max_Iter", BiCG_Max_Iter);
+        
+        pp.getarr("amr.n_cell", numcells);
 
         // Query domain periodicity
         pp.getarr("domain_lo_bc_types", domain_lo_bc_types);
@@ -694,7 +702,7 @@ AmrCoreAdv::GetData (int lev, Real time, Vector<MultiFab*>& data, Vector<Real>& 
 // advance a level by dt
 // includes a recursive call for finer levels
 void
-AmrCoreAdv::timeStep (int lev, Real time, int iteration, int& num_accepted)
+AmrCoreAdv::timeStep (int lev, Real time, int iteration, int& num_accepted, Real& Total_Plaq, Real& Total_deltaH)
 {
     if (regrid_int > 0)  // We may need to regrid
     {
@@ -734,7 +742,7 @@ AmrCoreAdv::timeStep (int lev, Real time, int iteration, int& num_accepted)
     }
 
     // advance a single level for a single time step, updates flux registers
-    Advance(lev, time, dt[lev], iteration, nsubsteps[lev], num_accepted);
+    Advance(lev, time, dt[lev], iteration, nsubsteps[lev], num_accepted, Total_Plaq, Total_deltaH);
 
     ++istep[lev];
 
@@ -749,7 +757,7 @@ AmrCoreAdv::timeStep (int lev, Real time, int iteration, int& num_accepted)
         // recursive call for next-finer level
         for (int i = 1; i <= nsubsteps[lev+1]; ++i)
         {
-            timeStep(lev+1, time+(i-1)*dt[lev+1], i, num_accepted);
+            timeStep(lev+1, time+(i-1)*dt[lev+1], i, num_accepted, Total_Plaq, Total_deltaH);
         }
 
         AverageDownTo(lev); // average lev+1 down to lev
@@ -758,7 +766,7 @@ AmrCoreAdv::timeStep (int lev, Real time, int iteration, int& num_accepted)
 
 // advance a single level for a single time step, updates flux registers
 void
-AmrCoreAdv::Advance (int lev, Real time, Real dt_lev, int iteration, int ncycle, int& num_accepted)
+AmrCoreAdv::Advance (int lev, Real time, Real dt_lev, int iteration, int ncycle, int& num_accepted, Real& Total_Plaq, Real& Total_deltaH)
 {
     constexpr int num_grow = NUM_GHOST_CELLS;
 
@@ -859,6 +867,11 @@ AmrCoreAdv::Advance (int lev, Real time, Real dt_lev, int iteration, int ncycle,
         amrex::Print() << "NEW STATE REJECTED " << std::endl;
     }
     
+    if(istep[0] > num_therm_steps)
+    {
+        Total_Plaq += Measure_Plaq(S_new);
+        Total_deltaH += HGauge+HFermi-HGaugecurrent-HFermicurrent;
+    }
     
     Perturb(S_new, time, geom_lev);
     FillIntermediatePatch(lev, time, S_new, 0, S_new.nComp());
@@ -1750,7 +1763,38 @@ Real AmrCoreAdv::Action_Fermi_From_Chi (MultiFab& state_mf)
 }
 
 
+Real AmrCoreAdv::Measure_Plaq (MultiFab& state_mf)
+{
+    
+    ReduceOps<ReduceOpSum> reduce_operations;
+    ReduceData<Real> reduce_data(reduce_operations);
+    using ReduceTuple = typename decltype(reduce_data)::Type;
 
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+
+  for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
+  {
+    const Box& bx = mfi.tilebox();
+    const auto ncomp = state_mf.nComp();
+
+    const auto& state_fab = state_mf.array(mfi); 
+
+    // For each grid, loop over all the valid points
+    reduce_operations.eval(bx, reduce_data,
+    [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
+    {
+        return {sum_plaq(i,j,k,state_fab)/(numcells[0]*numcells[1])};
+    });
+  }
+    ReduceTuple reduced_values = reduce_data.value();
+    // MPI reduction
+    ParallelDescriptor::ReduceRealSum(amrex::get<0>(reduced_values));
+    Real action = amrex::get<0>(reduced_values);
+    
+    return action;
+}
 
 
 

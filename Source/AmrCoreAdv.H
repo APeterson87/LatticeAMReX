@@ -126,10 +126,10 @@ private:
 
     // advance a level by dt
     // includes a recursive call for finer levels
-    void timeStep (int lev, amrex::Real time, int iteration, int &num_accepted);
+    void timeStep (int lev, amrex::Real time, int iteration, int &num_accepted, amrex::Real& Total_Plaq, amrex::Real& Total_deltaH);
 
     // advance a single level for a single time step
-    void Advance (int lev, amrex::Real time, amrex::Real dt_lev, int iteration, int ncycle, int& num_accepted);
+    void Advance (int lev, amrex::Real time, amrex::Real dt_lev, int iteration, int ncycle, int& num_accepted, amrex::Real& Total_Plaq, amrex::Real& Total_deltaH);
     
 
     // a wrapper for EstTimeStep(0
@@ -195,6 +195,8 @@ private:
     amrex::Real Action_Fermi(amrex::MultiFab& state_mf);
     amrex::Real Action_Fermi_From_Chi (MultiFab& state_mf);
     
+    amrex::Real Measure_Plaq (MultiFab& state_mf);
+    
     ////////////////
     
     
@@ -243,6 +245,8 @@ private:
     amrex::Real Temp_T = 1.0;
     amrex::Real BiCGThresh = 1e-5;
     int BiCG_Max_Iter = 100;
+    
+    Vector<int> numcells;
 
     // if >= 0 we restart from a checkpoint
     std::string restart_chkfile = "";

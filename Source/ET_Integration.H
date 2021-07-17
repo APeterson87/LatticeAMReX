@@ -17,6 +17,7 @@
 #include <ET_Integration_Perturb_K.H>
 #include <ET_Integration_AMR_Cell_Tag_K.H>
 #include <ET_Integration_Sum_Action_K.H>
+#include <ET_Integration_Measurements_K.H>
 
 #ifdef PROBLEM_LOADS_INITDATA
 #include <ET_Integration_LoadInitData_K.H>
