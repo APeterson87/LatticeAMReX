@@ -11,3 +11,4 @@ CEXE_headers += ET_Integration_Perturb_K.H
 CEXE_headers += ET_Integration_AMR_Cell_Tag_K.H
 CEXE_headers += ET_Integration_Sum_Action_K.H
 CEXE_headers += ET_Integration_Measurements_K.H
+CEXE_headers += ET_Integration_Utils_K.H

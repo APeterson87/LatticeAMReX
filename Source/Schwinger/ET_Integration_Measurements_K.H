@@ -5,6 +5,9 @@
 #include <AMReX_Array4.H> 
 #include <ET_Integration_Setup_K.H> 
 
+#include<complex>
+
+
 AMREX_GPU_DEVICE 
 inline 
 amrex::Real
@@ -28,5 +31,23 @@ sum_plaq(const int i, const int j, const int k,
         
             
         return plaq_re;
+}
+
+AMREX_GPU_DEVICE 
+inline 
+amrex::Real
+state_TopCharge(const int i, const int j, const int k, 
+        amrex::Array4<amrex::Real> const& smeared_fab) 
+{
+        //enum {Real_0, Imaginary_0, Real_1, Imaginary_1};
+        std::complex<double> Sm_0_00 = std::complex<double>(smeared_fab(i, j, k, cIdx::Real_0), smeared_fab(i, j, k, cIdx::Imaginary_0));
+        std::complex<double> Sm_1_p0 = std::complex<double>(smeared_fab(i+1, j, k, cIdx::Real_1), smeared_fab(i+1, j, k, cIdx::Imaginary_1));
+        std::complex<double> Sm_0_0p = std::complex<double>(smeared_fab(i, j+1, k, cIdx::Real_0), smeared_fab(i, j+1, k, cIdx::Imaginary_0));
+        std::complex<double> Sm_1_00 = std::complex<double>(smeared_fab(i, j, k, cIdx::Real_1), smeared_fab(i, j, k, cIdx::Imaginary_1));
+    
+        std::complex<double> w = Sm_0_00*Sm_1_p0*std::conj(Sm_0_0p)*std::conj(Sm_1_00);
+        amrex::Real topC = std::arg(w)/(2*M_PI);
+        
+        return topC;
 }
 #endif

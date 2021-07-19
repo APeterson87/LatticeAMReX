@@ -37,9 +37,8 @@ state_init(int i, int j, int k,
         state_fab(i, j, k, Idx::Ucurrent_1_Imaginary) = std::sin(theta_1);
         
         state_fab(i, j, k, Idx::P_0) = P_0;
-        state_fab(i, j, k, Idx::Pcurrent_0) = P_0;
         state_fab(i, j, k, Idx::P_1) = P_1;
-        state_fab(i, j, k, Idx::Pcurrent_1) = P_1;
+
         
         //state_fab(i, j, k, Idx::Phi_0_Real) = -std::pow(M_PI/20,2)*std::pow(std::cos(x0*M_PI/20),4)*std::pow(std::cos(x1*M_PI/20),4); //amrex::RandomNormal(0,1);
         //state_fab(i, j, k, Idx::Phi_0_Imaginary) = -std::pow(M_PI/20,2)*std::pow(std::cos(x0*M_PI/20),4)*std::pow(std::cos(x1*M_PI/20),4);  //amrex::RandomNormal(0,1);
