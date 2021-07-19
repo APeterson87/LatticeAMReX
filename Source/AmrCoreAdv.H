@@ -4,6 +4,7 @@
 #include <string>
 #include <limits>
 #include <memory>
+#include <complex>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -123,13 +124,13 @@ private:
     // utility to copy in data from old and/or new state into another multifab
     void GetData (int lev, amrex::Real time, amrex::Vector<amrex::MultiFab*>& data,
                   amrex::Vector<amrex::Real>& datatime);
-
+    
     // advance a level by dt
     // includes a recursive call for finer levels
-    void timeStep (int lev, amrex::Real time, int iteration, int &num_accepted, amrex::Real& Total_Plaq, amrex::Real& Total_deltaH);
+    void timeStep (int lev, amrex::Real time, int iteration, Observables& Obs /*int &num_accepted, amrex::Real& Total_Plaq, amrex::Real& Total_deltaH*/);
 
     // advance a single level for a single time step
-    void Advance (int lev, amrex::Real time, amrex::Real dt_lev, int iteration, int ncycle, int& num_accepted, amrex::Real& Total_Plaq, amrex::Real& Total_deltaH);
+    void Advance (int lev, amrex::Real time, amrex::Real dt_lev, int iteration, int ncycle, Observables& Obs /* int& num_accepted, amrex::Real& Total_Plaq, amrex::Real& Total_deltaH*/);
     
 
     // a wrapper for EstTimeStep(0
@@ -179,23 +180,25 @@ private:
     // Single level functions called by advance()
     
     void update_momentum (MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom, amrex::Real m_0, amrex::Real r , amrex::Real beta, amrex::Real dtau);
-    void update_gauge (MultiFab& state_mf, const amrex::Real time, const Geometry& geom, amrex::Real dtau);
+    void update_gauge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, amrex::Real dtau);
     
     void Fermi_BiCG_solve(MultiFab& S_new, int lev, Real time, const amrex::Geometry& geom_lev, amrex::Real Threshold, int Max_Iter);
     void ResetDDinvPhi(amrex::MultiFab& state_mf);
-    void Set_DDp(MultiFab& state_mf, const Geometry& geom, amrex::Real m_0, amrex::Real r);
-    void Set_DDinvPhi(MultiFab& state_mf, const Geometry& geom, amrex::Real alpha);
+    void Set_DDp (MultiFab& DDp_mf, MultiFab& p_mf, MultiFab& state_mf, const Geometry& geom, amrex::Real m_0, amrex::Real r);
+    void Set_DDinvPhi(MultiFab& state_mf, MultiFab& p_mf, const Geometry& geom, amrex::Real alpha);
     void Set_g3DinvPhi (MultiFab& state_mf, const Geometry& geom, amrex::Real m_0, amrex::Real r);
-    void Set_res(MultiFab& state_mf, const Geometry& geom, amrex::Real alpha);
-    void Set_p(MultiFab& state_mf, const Geometry& geom, amrex::Real beta);
-    void SetPhiFromChi(amrex::MultiFab& state_mf, amrex::Real m_0, amrex::Real r);
+    void Set_res(MultiFab& res_mf, MultiFab& state_mf, const Geometry& geom, amrex::Real alpha);
+    void Set_p(MultiFab& state_mf, MultiFab& res_mf, const Geometry& geom, amrex::Real beta);
+    void SetPhiFromChi(amrex::MultiFab& state_mf, int lev, amrex::Real time, amrex::Real m_0, amrex::Real r);
     
-    void Perturb (amrex::MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom);
+    void Perturb (amrex::MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom);
     amrex::Real Action_Gauge(amrex::MultiFab& state_mf, amrex::Real beta);
     amrex::Real Action_Fermi(amrex::MultiFab& state_mf);
     amrex::Real Action_Fermi_From_Chi (MultiFab& state_mf);
     
     amrex::Real Measure_Plaq (MultiFab& state_mf);
+    void smear_gauge (MultiFab& smeared_mf, MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, int smear_iter, amrex::Real alpha);
+    Real meas_TopCharge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, int smear_iter, amrex::Real alpha);
     
     ////////////////
     
@@ -245,6 +248,9 @@ private:
     amrex::Real Temp_T = 1.0;
     amrex::Real BiCGThresh = 1e-5;
     int BiCG_Max_Iter = 100;
+    
+    amrex::Real APE_alpha = 0.5;
+    int APE_iter = 2;
     
     Vector<int> numcells;
 
