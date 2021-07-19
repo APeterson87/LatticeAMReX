@@ -78,7 +78,7 @@ AmrCoreAdv::Evolve ()
     int last_plot_file_step = 0;
     int last_chk_file_step = 0;
     int last_diag_file_step = 0;
-    //srand (static_cast <unsigned> (time(0)));
+    srand (static_cast <unsigned> (time(0)));
     
     Observables Obs;
     
