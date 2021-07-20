@@ -3,7 +3,7 @@ max_step = 1200
 num_therm_steps = 200
 stop_time = 2000000.0
 
-n_substeps = 15
+n_substeps = 10
  
 coupling_beta = 3.0
 mass_0 = 0.1
@@ -11,10 +11,10 @@ wilson_r = 1.0
 Temp_T = 1.0
 
 BiCGThresh = 1e-6
-BiCG_Max_Iter = 200
+BiCG_Max_Iter = 100
 
 APE_iter = 2
-APE_alpha = 0.5
+APE_alpha = 1.0
 
 # Problem Size & Geometry 
 amr.n_cell = 16 16
