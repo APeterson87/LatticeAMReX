@@ -11,6 +11,7 @@ struct Observables {
             int num_accepted;
             Real TimeSumAvePlaq;
             Real TimeSumDeltaH;
+    
             std::vector<int> TopologicalCharge;
     
             Observables() : num_accepted(0), 
@@ -18,13 +19,38 @@ struct Observables {
                             TimeSumDeltaH(0) { }
         };
 
+struct Parameters {
+    
+    //Physical Parameters
+            Real beta = 3.0;
+            Real mass = 0.1;
+            Real r = 1.0;
+            Real Temp = 1.0;
+    
+    //Problem Parameters
+            int Nx = 8;
+            int Ny = 8;
+    
+            int hmc_substeps = 15;
+            int therm_steps = 100;
+            int starting_meas_step = 200;
+    
+            Real tau = 1.0;
+    
+            Real BiCG_Thresh = 1e-6;
+            int BiCG_Max_Iters = 100;
+    
+            int APE_smear_iter = 1.0;
+            Real APE_smear_alpha = 0.5;
+
+};
+
 
 AMREX_GPU_DEVICE 
 inline 
 void 
 state_smear_gauge(int i, int j, int k, 
         amrex::Array4<amrex::Real> const& smeared_fab,
-        amrex::Array4<amrex::Real> const& state_fab,
         const amrex::Real time,
         amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dx,
         const amrex::GeometryData& geom,
@@ -32,56 +58,52 @@ state_smear_gauge(int i, int j, int k,
 {
 
 
-        amrex::Real U_0_00_r = state_fab(i, j, k, Idx::U_0_Real);
-        amrex::Real U_0_00_i = state_fab(i, j, k, Idx::U_0_Imaginary);
+        amrex::Real U_0_00_r = smeared_fab(i, j, k, cIdx::Real_0);
+        amrex::Real U_0_00_i = smeared_fab(i, j, k, cIdx::Imaginary_0);
         std::complex<double> U_0_00 = std::complex<double>(U_0_00_r, U_0_00_i);
         
-        amrex::Real U_1_p0_r = state_fab(i+1, j, k, Idx::U_1_Real);
-        amrex::Real U_1_p0_i = state_fab(i+1, j, k, Idx::U_1_Imaginary);
+        amrex::Real U_1_p0_r = smeared_fab(i+1, j, k, cIdx::Real_1);
+        amrex::Real U_1_p0_i = smeared_fab(i+1, j, k, cIdx::Imaginary_1);
         std::complex<double> U_1_p0 = std::complex<double>(U_1_p0_r, U_1_p0_i);
         
-        amrex::Real U_0_0p_r = state_fab(i, j+1, k, Idx::U_0_Real);
-        amrex::Real U_0_0p_i = state_fab(i, j+1, k, Idx::U_0_Imaginary);
+        amrex::Real U_0_0p_r = smeared_fab(i, j+1, k, cIdx::Real_0);
+        amrex::Real U_0_0p_i = smeared_fab(i, j+1, k, cIdx::Imaginary_0);
         std::complex<double> U_0_0p = std::complex<double>(U_0_0p_r, U_0_0p_i);
         
-        amrex::Real U_1_00_r = state_fab(i, j, k, Idx::U_1_Real);
-        amrex::Real U_1_00_i = state_fab(i, j, k, Idx::U_1_Imaginary);
+        amrex::Real U_1_00_r = smeared_fab(i, j, k, cIdx::Real_1);
+        amrex::Real U_1_00_i = smeared_fab(i, j, k, cIdx::Imaginary_1);
         std::complex<double> U_1_00 = std::complex<double>(U_1_00_r, U_1_00_i);
         
-        amrex::Real U_0_0m_r = state_fab(i, j-1, k, Idx::U_0_Real);
-        amrex::Real U_0_0m_i = state_fab(i, j-1, k, Idx::U_0_Imaginary);
+        amrex::Real U_0_0m_r = smeared_fab(i, j-1, k, cIdx::Real_0);
+        amrex::Real U_0_0m_i = smeared_fab(i, j-1, k, cIdx::Imaginary_0);
         std::complex<double> U_0_0m = std::complex<double>(U_0_0m_r, U_0_0m_i);
         
-        amrex::Real U_1_pm_r = state_fab(i+1, j-1, k, Idx::U_1_Real);
-        amrex::Real U_1_pm_i = state_fab(i+1, j-1, k, Idx::U_1_Imaginary);
+        amrex::Real U_1_pm_r = smeared_fab(i+1, j-1, k, cIdx::Real_1);
+        amrex::Real U_1_pm_i = smeared_fab(i+1, j-1, k, cIdx::Imaginary_1);
         std::complex<double> U_1_pm = std::complex<double>(U_1_pm_r, U_1_pm_i);
         
-        amrex::Real U_1_0m_r = state_fab(i, j-1, k, Idx::U_1_Real);
-        amrex::Real U_1_0m_i = state_fab(i, j-1, k, Idx::U_1_Imaginary);
+        amrex::Real U_1_0m_r = smeared_fab(i, j-1, k, cIdx::Real_1);
+        amrex::Real U_1_0m_i = smeared_fab(i, j-1, k, cIdx::Imaginary_1);
         std::complex<double> U_1_0m = std::complex<double>(U_1_0m_r, U_1_0m_i);
         
-        amrex::Real U_0_mp_r = state_fab(i-1, j+1, k, Idx::U_0_Real);
-        amrex::Real U_0_mp_i = state_fab(i-1, j+1, k, Idx::U_0_Imaginary);
+        amrex::Real U_0_mp_r = smeared_fab(i-1, j+1, k, cIdx::Real_0);
+        amrex::Real U_0_mp_i = smeared_fab(i-1, j+1, k, cIdx::Imaginary_0);
         std::complex<double> U_0_mp = std::complex<double>(U_0_mp_r, U_0_mp_i);
         
-        amrex::Real U_1_m0_r = state_fab(i-1, j, k, Idx::U_1_Real);
-        amrex::Real U_1_m0_i = state_fab(i-1, j, k, Idx::U_1_Imaginary);
+        amrex::Real U_1_m0_r = smeared_fab(i-1, j, k, cIdx::Real_1);
+        amrex::Real U_1_m0_i = smeared_fab(i-1, j, k, cIdx::Imaginary_1);
         std::complex<double> U_1_m0 = std::complex<double>(U_1_m0_r, U_1_m0_i);
         
-        amrex::Real U_0_m0_r = state_fab(i-1, j, k, Idx::U_0_Real);
-        amrex::Real U_0_m0_i = state_fab(i-1, j, k, Idx::U_0_Imaginary);
+        amrex::Real U_0_m0_r = smeared_fab(i-1, j, k, cIdx::Real_0);
+        amrex::Real U_0_m0_i = smeared_fab(i-1, j, k, cIdx::Imaginary_0);
         std::complex<double> U_0_m0 = std::complex<double>(U_0_m0_r, U_0_m0_i);
         
         std::complex<double> staple_0 = U_1_00*U_0_0p*std::conj(U_1_p0) + std::conj(U_1_0m)*U_0_0m*U_1_pm;
         std::complex<double> staple_1 = U_0_00*U_1_p0*std::conj(U_0_0p) + std::conj(U_0_m0)*U_1_m0*U_0_mp;
         
-        //Book version
         std::complex<double> SmU_0_00 = (1-alpha)*U_0_00 + alpha/2*staple_0;
         std::complex<double> SmU_1_00 = (1-alpha)*U_1_00 + alpha/2*staple_1;
         
-        //Dean's version
-        //std::complex<double> SmU_0_00 = alpha*staple_0; //(1-alpha)*U_0_00 + alpha/2*staple_0;
-        //std::complex<double> SmU_1_00 = alpha*staple_1; //(1-alpha)*U_1_00 + alpha/2*staple_1;
         
         
         smeared_fab(i, j, k, cIdx::Real_0) = std::real(std::polar(1.0, std::arg(SmU_0_00)));

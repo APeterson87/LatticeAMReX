@@ -44,22 +44,6 @@ state_set_DDp(int i, int j, int k,
 AMREX_GPU_DEVICE 
 inline 
 void 
-state_set_DDinvPhi(int i, int j, int k, 
-        amrex::Array4<amrex::Real> const& state_fab,
-        amrex::Array4<amrex::Real> const& p_fab,
-        amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dx,
-        const amrex::GeometryData& geom,
-        amrex::Real alpha) noexcept 
-{
-        state_fab(i, j, k, Idx::DDinvPhi_0_Real) += alpha*p_fab(i, j, k, pIdx::p_0_Real);
-        state_fab(i, j, k, Idx::DDinvPhi_0_Imaginary) += alpha*p_fab(i, j, k, pIdx::p_0_Imaginary);
-        state_fab(i, j, k, Idx::DDinvPhi_1_Real) += alpha*p_fab(i, j, k, pIdx::p_1_Real);
-        state_fab(i, j, k, Idx::DDinvPhi_1_Imaginary) += alpha*p_fab(i, j, k, pIdx::p_1_Imaginary);
-}
-
-AMREX_GPU_DEVICE 
-inline 
-void 
 state_set_g3DinvPhi(int i, int j, int k, 
         amrex::Array4<amrex::Real> const& state_fab,
         amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dx,
@@ -87,39 +71,6 @@ state_set_g3DinvPhi(int i, int j, int k,
         state_fab(i, j, k, Idx::g3DinvPhi_1_Real) = g3DinvPhi_1_Real;
         state_fab(i, j, k, Idx::g3DinvPhi_1_Imaginary) = g3DinvPhi_1_Imaginary;
         
-}
-
-AMREX_GPU_DEVICE 
-inline 
-void 
-state_set_res(int i, int j, int k,
-        amrex::Array4<amrex::Real> const& res_fab,
-        amrex::Array4<amrex::Real> const& DDp_fab,
-        amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dx,
-        const amrex::GeometryData& geom,
-        amrex::Real alpha) noexcept 
-{
-        res_fab(i, j, k, 0) -= alpha*DDp_fab(i, j, k, DDpIdx::DDp_0_Real);
-        res_fab(i, j, k, 1) -= alpha*DDp_fab(i, j, k, DDpIdx::DDp_0_Imaginary);
-        res_fab(i, j, k, 2) -= alpha*DDp_fab(i, j, k, DDpIdx::DDp_1_Real);
-        res_fab(i, j, k, 3) -= alpha*DDp_fab(i, j, k, DDpIdx::DDp_1_Imaginary);
-}
-
-
-AMREX_GPU_DEVICE 
-inline 
-void 
-state_set_p(int i, int j, int k, 
-        amrex::Array4<amrex::Real> const& p_fab,
-        amrex::Array4<amrex::Real> const& res_fab,
-        amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dx,
-        const amrex::GeometryData& geom,
-        amrex::Real beta) noexcept 
-{
-        p_fab(i, j, k, pIdx::p_0_Real) = res_fab(i, j, k, 0) + beta*p_fab(i, j, k, pIdx::p_0_Real);
-        p_fab(i, j, k, pIdx::p_0_Imaginary) = res_fab(i, j, k, 1) + beta*p_fab(i, j, k, pIdx::p_0_Imaginary);
-        p_fab(i, j, k, pIdx::p_1_Real) = res_fab(i, j, k, 2) + beta*p_fab(i, j, k, pIdx::p_1_Real);
-        p_fab(i, j, k, pIdx::p_1_Imaginary) = res_fab(i, j, k, 3) + beta*p_fab(i, j, k, pIdx::p_1_Imaginary);
 }
 
 AMREX_GPU_DEVICE 
