@@ -1,20 +1,22 @@
 # Stopping Criteria
 max_step = 1200
-num_therm_steps = 200
+num_therm_steps = 100
+starting_measurements_step = 200
 stop_time = 2000000.0
 
-n_substeps = 10
+num_hmc_substeps = 10
+hmc_tau = 1.0
  
-coupling_beta = 3.0
+coupling_beta = 1.0
 mass_0 = 0.1
 wilson_r = 1.0
 Temp_T = 1.0
 
-BiCGThresh = 1e-6
-BiCG_Max_Iter = 100
+BiCGThresh = 1e-16
+BiCG_Max_Iter = 10000
 
-APE_iter = 2
-APE_alpha = 1.0
+APE_iter = 0
+APE_alpha = 0.5
 
 # Problem Size & Geometry 
 amr.n_cell = 16 16
@@ -29,7 +31,7 @@ amr.v = 1
 
 # Refinement Parameters 
 amr.max_level = 0
-amr.max_grid_size = 8
+amr.max_grid_size = 16
 amr.ref_ratio = 2
 amr.n_error_buf = 1
 amr.blocking_factor = 8
@@ -54,7 +56,7 @@ problem.epsilon = 0.01
 # Plotting steps 
 amr.plot_int = 100
 amr.diag_int = -1
-amr.chk_int = 1000
+amr.chk_int = -1
 
 # Restart from checkpoint or use as initial condition? 
 #amr.restart = chk0002000
