@@ -46,7 +46,9 @@ state_TopCharge(const int i, const int j, const int k,
         std::complex<double> Sm_1_00 = std::complex<double>(smeared_fab(i, j, k, cIdx::Real_1), smeared_fab(i, j, k, cIdx::Imaginary_1));
     
         std::complex<double> w = Sm_0_00*Sm_1_p0*std::conj(Sm_0_0p)*std::conj(Sm_1_00);
-        amrex::Real topC = std::arg(w)/(2*M_PI);
+        amrex::Real topC = std::arg(w);
+    
+        
         
         return topC;
 }

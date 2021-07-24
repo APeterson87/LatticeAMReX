@@ -189,6 +189,10 @@ AmrCoreAdv::Evolve ()
     std::ofstream TopCharge("TopologicalCharges.dat");
     for (const auto &e : Obs.TopologicalCharge) TopCharge << e << "\n";
     TopCharge.close();
+    
+    std::ofstream DeltaH("DeltaH.dat");
+    for (const auto &e : Obs.deltaH) DeltaH << e << "\n";
+    DeltaH.close();
 }
 
 // initializes multilevel data
@@ -878,8 +882,10 @@ AmrCoreAdv::Advance (int lev, Real time, Real dt_lev, int iteration, int ncycle,
         Obs.TimeSumAvePlaq += Measure_Plaq(S_new);
         Obs.TimeSumDeltaH += HTotal-HTotalcurrent;
         Real InstantonNumber = meas_TopCharge(S_new, lev, time, geom_lev, Param);
-        Obs.TopologicalCharge.push_back(InstantonNumber);
-        amrex::Print() << "Topological Charge = " << InstantonNumber << std::endl;
+        Obs.TopologicalCharge.push_back((int)std::round(InstantonNumber));
+        amrex::Print() << "Topological Charge = " << (int)std::round(InstantonNumber) << std::endl;
+        
+        Obs.deltaH.push_back(HTotal-HTotalcurrent);
         
         
     }
@@ -1874,7 +1880,16 @@ void AmrCoreAdv::smear_gauge (MultiFab& smeared_mf, MultiFab& state_mf, int lev,
     const auto dx = geom.CellSizeArray();
     int ncomp = state_mf.nComp();
     
+    const BoxArray& ba = state_mf.boxArray();
+    const DistributionMapping& dm = state_mf.DistributionMap();
+    
+    MultiFab* smeared_tmp_mf = new MultiFab;
+    smeared_tmp_mf -> define(ba,dm,4,NUM_GHOST_CELLS);
+    
     MultiFab::Copy(smeared_mf, state_mf, Idx::U_0_Real, 0, 4, NUM_GHOST_CELLS);
+    
+    MultiFab::Copy(*smeared_tmp_mf, smeared_mf, cIdx::Real_0, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+    
     for(int iter = 0; iter < Param.APE_smear_iter; iter++)
     {
 #ifdef _OPENMP
@@ -1888,18 +1903,40 @@ void AmrCoreAdv::smear_gauge (MultiFab& smeared_mf, MultiFab& state_mf, int lev,
     
         const auto& state_fab = state_mf.array(mfi);
         const auto& smeared_fab = smeared_mf.array(mfi);
+        const auto& smeared_tmp_fab = smeared_tmp_mf -> array(mfi);
     
         // For each grid, loop over all the valid points
         amrex::ParallelFor(bx,
         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            state_smear_gauge(i, j, k, smeared_fab, time, dx, geom.data(), Param.APE_smear_alpha);
+            state_smear_gauge(i, j, k, smeared_fab, smeared_tmp_fab, time, dx, geom.data(), Param.APE_smear_alpha);
         });
       }
+      
+      FillIntermediatePatch(lev, time, *smeared_tmp_mf, 0, 4);
+        
+      for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
+      {
+         const Box& bx = mfi.tilebox();
+         const auto ncomp = state_mf.nComp();
     
+         const auto& state_fab = state_mf.array(mfi);
+         const auto& smeared_fab = smeared_mf.array(mfi);
+         const auto& smeared_tmp_fab = smeared_tmp_mf -> array(mfi);
+    
+          // For each grid, loop over all the valid points
+         amrex::ParallelFor(bx,
+         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+         {
+             state_project_smeared(i, j, k, smeared_fab, smeared_tmp_fab, time, dx, geom.data());
+         });
+       }
+        
     }
+    
+    delete smeared_tmp_mf;
 
-  FillIntermediatePatch(lev, time, smeared_mf, 0, 4);
+    FillIntermediatePatch(lev, time, smeared_mf, 0, 4);
   
 }
 
@@ -1943,7 +1980,7 @@ Real AmrCoreAdv::meas_TopCharge (MultiFab& state_mf, int lev, const amrex::Real 
     
     delete smeared_mf;
     
-    return TopCharge;
+    return TopCharge/(2.0*M_PI);
 }
 
 
