@@ -1,5 +1,5 @@
 # Stopping Criteria
-max_step = 1200
+max_step = 700
 num_therm_steps = 100
 starting_measurements_step = 200
 stop_time = 2000000.0
@@ -16,7 +16,7 @@ BiCGThresh = 1e-16
 BiCG_Max_Iter = 10000
 
 APE_iter = 0
-APE_alpha = 0.5
+APE_alpha = 0 
 
 # Problem Size & Geometry 
 amr.n_cell = 16 16
