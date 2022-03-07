@@ -6,6 +6,7 @@ ETI_HOME ?= ../..
 DEBUG     = FALSE
 USE_MPI   = TRUE
 USE_OMP   = FALSE
+TINY_PROFILE = TRUE
 
 COMP      = gnu
 DIM       = 2
