@@ -15,6 +15,12 @@ struct Observables {
             std::vector<int> TopologicalCharge;
             std::vector<Real> deltaH;
     
+            std::vector<std::vector<double>> sigma_meas;
+            std::vector<double> sigma_ave;
+            std::vector<double> sigma_stdev;
+    
+            std::vector<std::vector<double>> pion_correlation;
+    
             Observables() : num_accepted(0), 
                             TimeSumAvePlaq(0), 
                             TimeSumDeltaH(0) { }
@@ -38,11 +44,17 @@ struct Parameters {
     
             Real tau = 1.0;
     
+            bool use_dynamical_fermions = true;
+    
             Real BiCG_Thresh = 1e-6;
             int BiCG_Max_Iters = 100;
+            bool stabilized = false;
     
             int APE_smear_iter = 1.0;
             Real APE_smear_alpha = 0.5;
+            int measWilsonLoops_Interval = 10;
+            int checkrevtraj_Interval = 5;
+    
 
 };
 
@@ -139,5 +151,4 @@ state_project_smeared(int i, int j, int k,
         smeared_fab(i, j, k, cIdx::Imaginary_1) = std::imag(std::polar(1.0,std::arg(SmU_tmp_1_00)));
 
 }
-
 #endif

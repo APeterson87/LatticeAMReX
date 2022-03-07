@@ -5,6 +5,7 @@
 #include <limits>
 #include <memory>
 #include <complex>
+#include<thread>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -31,6 +32,9 @@
 #include "AMReX_TimeIntegrator.H"
 
 using namespace amrex;
+
+
+
 
 namespace InterpType {
     enum {
@@ -88,6 +92,18 @@ public:
     // tag all cells for refinement
     // overrides the pure virtual function in AmrCore
     virtual void ErrorEst (int lev, amrex::TagBoxArray& tags, amrex::Real time, int ngrow) override;
+    
+    void Fermi_BiCG_solve(MultiFab& S_new, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
+    void General_BiCG_solve(MultiFab& x_mf, const MultiFab& b_mf, MultiFab& S_new, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
+    void Fermi_BiCGStab_solve(MultiFab& S_new, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
+    void General_BiCGStab_solve(MultiFab& x_mf, const MultiFab& b_mf, MultiFab& S_new, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
+
+    void Fermi_Solve(MultiFab& S_new, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
+    void General_Solve(MultiFab& x_mf, const MultiFab& b_mf, MultiFab& S_new, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
+    
+    void Fermi_Solve_viaBind(MultiFab& S_new, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param, const std::function<void(MultiFab&, int, Real, const amrex::Geometry&, Parameters)>& solve);
+    
+    void General_Solve_viaBind(MultiFab& x_mf, const MultiFab& b_mf, MultiFab& S_new, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param, const std::function<void(MultiFab&, const MultiFab&, MultiFab&, int, Real, const amrex::Geometry&, Parameters)>& solve);
 
 private:
 
@@ -181,27 +197,41 @@ private:
     void Trajectory(MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
     Real Check_Reversed_Trajectory(const MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
     
-    void update_momentum (MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
-    void update_gauge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, amrex::Real dtau);
+    void update_momentum (MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
+    void update_gauge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param, amrex::Real dtau);
     
-    void Fermi_BiCG_solve(MultiFab& S_new, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
+    void update_TopChargeDensity (MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param);
+    
+
+    
     void ResetDDinvPhi(amrex::MultiFab& state_mf);
-    void Set_DDp (MultiFab& DDp_mf, MultiFab& p_mf, MultiFab& state_mf, const Geometry& geom, amrex::Real m_0, amrex::Real r);
+
     void Set_DDinvPhi(MultiFab& state_mf, MultiFab& p_mf, const Geometry& geom, amrex::Real alpha);
-    void Set_g3DinvPhi (MultiFab& state_mf, const Geometry& geom, amrex::Real m_0, amrex::Real r);
+
     void Set_res(MultiFab& res_mf, MultiFab& state_mf, const Geometry& geom, amrex::Real alpha);
     void Set_p(MultiFab& state_mf, MultiFab& res_mf, const Geometry& geom, amrex::Real beta);
     void SetPhiFromChi(amrex::MultiFab& state_mf, int lev, amrex::Real time, amrex::Real m_0, amrex::Real r);
+    void Set_g3DinvPhi (MultiFab& state_mf, const Geometry& geom, amrex::Real m_0, amrex::Real r);
+    void Set_DDp (MultiFab& DDp_mf, MultiFab& p_mf, MultiFab& state_mf, const Geometry& geom, amrex::Real m_0, amrex::Real r);
     
-    void Perturb (amrex::MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom);
+    void Set_g3p (MultiFab& g3Dp_mf, MultiFab& p_mf, const Geometry& geom);
+    void Set_g3Dp (MultiFab& g3Dp_mf, MultiFab& p_mf, MultiFab& state_mf, const Geometry& geom, Parameters Param);
+    
+
+    
+    void Perturb (amrex::MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param);
     amrex::Real Action_Gauge(amrex::MultiFab& state_mf, amrex::Real beta);
     amrex::Real Action_Momentum(amrex::MultiFab& state_mf);
     amrex::Real Action_Fermi(amrex::MultiFab& state_mf);
     amrex::Real Action_Fermi_From_Chi (MultiFab& state_mf);
     
     amrex::Real Measure_Plaq (MultiFab& state_mf);
+    amrex::Real Measure_Smeared_Plaq (MultiFab& smeared_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
     void smear_gauge (MultiFab& smeared_mf, MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
     Real meas_TopCharge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
+    void meas_WilsonLoops(MultiFab& state_mf, int lev, amrex::Real time, const Geometry& geom, Parameters Param, std::vector<double>& sigma_out);
+    
+    //void PionCorrelation (MultiFab& state_mf, int lev, const Real time_lev, const amrex::Geometry& geom, Parameters Param, std::vector<double>& pion_corr_out);
     
     ////////////////
     
@@ -249,13 +279,19 @@ private:
     amrex::Real coupling_beta = 1.0;
     amrex::Real mass_0 = 0.1;
     amrex::Real wilson_r = 1.0;
-    
     amrex::Real Temp_T = 1.0;
+    
+    
+    bool use_dynamical_fermi = true;
     amrex::Real BiCGThresh = 1e-5;
     int BiCG_Max_Iter = 100;
+    bool Use_BiCG_Stab = false;
     
     amrex::Real APE_alpha = 0.5;
     int APE_iter = 2;
+    
+    int measWL_Interval = 10;
+    int Check_revTraj_Int = 5;
     
     Vector<int> numcells;
 

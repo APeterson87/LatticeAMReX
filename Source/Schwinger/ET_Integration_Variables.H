@@ -22,4 +22,5 @@ names = { "U_0_Real",
          "g3DinvPhi_0_Real", 
          "g3DinvPhi_0_Imaginary", 
          "g3DinvPhi_1_Real", 
-         "g3DinvPhi_1_Imaginary"};
+         "g3DinvPhi_1_Imaginary",
+         "TopChargeDensity"};

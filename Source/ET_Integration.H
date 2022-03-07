@@ -19,6 +19,7 @@
 #include <ET_Integration_Sum_Action_K.H>
 #include <ET_Integration_Measurements_K.H>
 #include <ET_Integration_Utils_K.H>
+#include <ET_Integration_DiracOps_K.H>
 
 #ifdef PROBLEM_LOADS_INITDATA
 #include <ET_Integration_LoadInitData_K.H>
