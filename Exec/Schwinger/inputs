@@ -12,19 +12,24 @@ mass_0 = 0.1
 wilson_r = 1.0
 Temp_T = 1.0
 
+Use_Dynamical_Fermions = 0
 BiCGThresh = 1e-16
 BiCG_Max_Iter = 10000
+Use_BiCG_Stab = 0
 
-APE_iter = 0
-APE_alpha = 0 
+APE_iter = 1
+APE_alpha = 0.5 
+
+measWilsonLoops_Interval = 100
+CheckReversedTrajectoryInterval = 20
 
 # Problem Size & Geometry 
 amr.n_cell = 16 16
 
 geometry.is_periodic = 1 1 
 geometry.coord_sys = 0 
-geometry.prob_lo = -8.0 -8.0 #-20.9805 -20.9805 -20.9805 
-geometry.prob_hi = 8.0 8.0 #20.9805 20.9805 20.9805 
+geometry.prob_lo = -16.0 -16.0 #-20.9805 -20.9805 -20.9805 
+geometry.prob_hi = 16.0 16.0 #20.9805 20.9805 20.9805 
 
 # Turn on verbosity in amr 
 amr.v = 1
@@ -54,7 +59,7 @@ problem.cfl = 1.0
 problem.epsilon = 0.01
 
 # Plotting steps 
-amr.plot_int = 100
+amr.plot_int = -1
 amr.diag_int = -1
 amr.chk_int = -1
 
