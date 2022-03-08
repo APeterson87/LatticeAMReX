@@ -16,9 +16,9 @@ initialize_from_data(int i, int j, int k,
 {
         const auto domain_xlo = geom.ProbLo();
         
-        amrex::Real x0 = (i + 0.5)*geom.CellSize(0) + domain_xlo[0]; 
-        amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1]; 
-        amrex::Real x2 = (k + 0.5)*geom.CellSize(2) + domain_xlo[2]; 
+        //amrex::Real x0 = (i + 0.5)*geom.CellSize(0) + domain_xlo[0]; 
+        //amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1]; 
+        //amrex::Real x2 = (k + 0.5)*geom.CellSize(2) + domain_xlo[2]; 
         
 
 }
