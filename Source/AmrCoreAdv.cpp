@@ -424,7 +424,7 @@ void AmrCoreAdv::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& ba
 #endif
     for ( MFIter mfi(state, TilingIfNotGPU()); mfi.isValid(); ++mfi )
     {
-      const Box& bx = mfi.tilebox();
+      const Box& bx = mfi.nodaltilebox();
 
       const auto& state_arr = state.array(mfi);
 
@@ -481,7 +481,7 @@ AmrCoreAdv::ErrorEst (int lev, TagBoxArray& tags, Real time, int ngrow)
     {
         for (MFIter mfi(state, true); mfi.isValid(); ++mfi)
         {
-            const Box& tilebox  = mfi.tilebox();
+            const Box& tilebox  = mfi.nodaltilebox();
 
             auto tagarr = tags.array(mfi);
             const auto& state_fab = state.array(mfi);
@@ -597,13 +597,15 @@ AmrCoreAdv::FlipSigns(int lev, MultiFab& mf, int icomp, int ncomp)
 {
   const auto& geom = Geom(lev);  
   const Box& bx = geom.Domain();
+  Box nbx = bx;
+  nbx.surroundingNodes();
     
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
   for ( MFIter mfi(mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& gbx = mfi.growntilebox();
+    const Box& gbx = mfi.grownnodaltilebox();
 
     
     const auto Total_comps = mf.nComp();
@@ -616,11 +618,11 @@ AmrCoreAdv::FlipSigns(int lev, MultiFab& mf, int icomp, int ncomp)
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         //Only flip sign if j is outside bx
-        if(j < bx.smallEnd(1) || j > bx.bigEnd(1))
+        if(j < nbx.smallEnd(1) || j > nbx.bigEnd(1))
         {
             for(int n = icomp; n <= icomp+ncomp - 1; n++)
             {
-                fab(i, j, k, n) *= -1;
+                fab(i, j, k, n) *= 1;
             }
         }
     });
@@ -1498,7 +1500,7 @@ AmrCoreAdv::InitializeLevelFromData(int lev, const MultiFab& initial_data)
 #endif
     for ( MFIter mfi(initial_data, TilingIfNotGPU()); mfi.isValid(); ++mfi )
     {
-        const Box& bx = mfi.tilebox();
+        const Box& nbx = mfi.nodaltilebox();
         
         //const Box& bx = mfi.nodaltilebox();
         
@@ -1507,7 +1509,7 @@ AmrCoreAdv::InitializeLevelFromData(int lev, const MultiFab& initial_data)
 
         // Call a user-supplied function to initialize the state data
         // from the input data file.
-        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) {
+        ParallelFor(nbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) {
             initialize_from_data(i, j, k, state_fab, idata, dx, geom.data());
         });
     }
@@ -1628,13 +1630,13 @@ void AmrCoreAdv::update_gauge (MultiFab& state_mf, int lev, const amrex::Real ti
 #endif
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.tilebox();
+    const Box& nbx = mfi.nodaltilebox();
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi);
     
     // For each grid, loop over all the valid points
-    amrex::ParallelFor(bx,
+    amrex::ParallelFor(nbx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         state_update_gauge(i, j, k, state_fab, time, dx, geom.data(), dtau);
@@ -1661,13 +1663,13 @@ void AmrCoreAdv::update_momentum (MultiFab& state_mf, int lev, const amrex::Real
 #endif
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.tilebox();
+    const Box& nbx = mfi.nodaltilebox();
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi);
 
     // For each grid, loop over all the valid points
-    amrex::ParallelFor(bx,
+    amrex::ParallelFor(nbx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
       state_update_momentum(i, j, k, state_fab, time, dx, geom.data(), Param.mass, Param.r, Param.beta, Param.use_dynamical_fermions, dtau);
@@ -2371,14 +2373,14 @@ void AmrCoreAdv::Perturb (MultiFab& state_mf, int lev, const amrex::Real time, c
 #endif
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.tilebox();
+    const Box& nbx = mfi.nodaltilebox();
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi);
 
     // For each grid, loop over all the valid points
 
-    amrex::ParallelFor(bx,
+    amrex::ParallelFor(nbx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         state_Perturbation(i, j, k, state_fab, time, dx, geom.data());
@@ -2409,13 +2411,13 @@ Real AmrCoreAdv::Action_Gauge (MultiFab& state_mf, Real beta)
 
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.tilebox();
+    const Box& nbx = mfi.nodaltilebox();
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi); 
 
     // For each grid, loop over all the valid points
-    reduce_operations.eval(bx, reduce_data,
+    reduce_operations.eval(nbx, reduce_data,
     [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
     {
         return {sum_action_gauge(i,j,k,state_fab, beta)};
@@ -2442,13 +2444,13 @@ Real AmrCoreAdv::Action_Momentum (MultiFab& state_mf)
 
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.tilebox();
+    const Box& nbx = mfi.nodaltilebox();
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi); 
 
     // For each grid, loop over all the valid points
-    reduce_operations.eval(bx, reduce_data,
+    reduce_operations.eval(nbx, reduce_data,
     [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
     {
         return {sum_action_mom(i,j,k,state_fab)};
@@ -2475,13 +2477,13 @@ Real AmrCoreAdv::Action_Fermi (MultiFab& state_mf)
 
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.tilebox();
+    const Box& nbx = mfi.nodaltilebox();
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi); 
 
     // For each grid, loop over all the valid points
-    reduce_operations.eval(bx, reduce_data,
+    reduce_operations.eval(nbx, reduce_data,
     [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
     {
         return {sum_action_D(i,j,k,state_fab)};
@@ -2508,13 +2510,13 @@ Real AmrCoreAdv::Action_Fermi_From_Chi (MultiFab& state_mf)
 
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.tilebox();
+    const Box& nbx = mfi.nodaltilebox();
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi); 
 
     // For each grid, loop over all the valid points
-    reduce_operations.eval(bx, reduce_data,
+    reduce_operations.eval(nbx, reduce_data,
     [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
     {
         return {sum_action_chi(i,j,k,state_fab)};
@@ -2542,13 +2544,13 @@ Real AmrCoreAdv::Measure_Plaq (MultiFab& state_mf)
 
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.tilebox();
+    const Box& nbx = mfi.nodaltilebox();
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi); 
 
     // For each grid, loop over all the valid points
-    reduce_operations.eval(bx, reduce_data,
+    reduce_operations.eval(nbx, reduce_data,
     [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
     {
         return {sum_plaq(i,j,k,state_fab)/(numcells[0]*numcells[1])};
@@ -2575,13 +2577,13 @@ Real AmrCoreAdv::Measure_Smeared_Plaq (MultiFab& smeared_mf, int lev, const amre
 
   for ( MFIter mfi(smeared_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.tilebox();
+    const Box& nbx = mfi.nodaltilebox();
     const auto ncomp = smeared_mf.nComp();
 
     const auto& smeared_fab = smeared_mf.array(mfi); 
 
     // For each grid, loop over all the valid points
-    reduce_operations.eval(bx, reduce_data,
+    reduce_operations.eval(nbx, reduce_data,
     [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
     {
         return {sum_smeared_plaq(i,j,k,smeared_fab)/(numcells[0]*numcells[1])};
@@ -2602,12 +2604,12 @@ void AmrCoreAdv::smear_gauge (MultiFab& smeared_mf, MultiFab& state_mf, int lev,
     int ncomp = state_mf.nComp();
     
     const BoxArray& ba = state_mf.boxArray();
-    //BoxArray nba = ba;
-    //nba.surroundingNodes();
+    BoxArray nba = ba;
+    nba.surroundingNodes();
     const DistributionMapping& dm = state_mf.DistributionMap();
     
     MultiFab* smeared_tmp_mf = new MultiFab;
-    smeared_tmp_mf -> define(ba,dm,4,NUM_GHOST_CELLS);
+    smeared_tmp_mf -> define(nba,dm,4,NUM_GHOST_CELLS);
     
     MultiFab::Copy(smeared_mf, state_mf, Idx::U_0_Real, 0, 4, NUM_GHOST_CELLS);
     
@@ -2622,7 +2624,7 @@ void AmrCoreAdv::smear_gauge (MultiFab& smeared_mf, MultiFab& state_mf, int lev,
 
       for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
       {
-        const Box& bx = mfi.tilebox();
+        const Box& nbx = mfi.nodaltilebox();
         const auto ncomp = state_mf.nComp();
     
         const auto& state_fab = state_mf.array(mfi);
@@ -2630,7 +2632,7 @@ void AmrCoreAdv::smear_gauge (MultiFab& smeared_mf, MultiFab& state_mf, int lev,
         const auto& smeared_tmp_fab = smeared_tmp_mf -> array(mfi);
     
         // For each grid, loop over all the valid points
-        amrex::ParallelFor(bx,
+        amrex::ParallelFor(nbx,
         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             state_smear_gauge(i, j, k, smeared_fab, smeared_tmp_fab, time, dx, geom.data(), Param.APE_smear_alpha);
@@ -2641,7 +2643,7 @@ void AmrCoreAdv::smear_gauge (MultiFab& smeared_mf, MultiFab& state_mf, int lev,
         
       for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
       {
-         const Box& bx = mfi.tilebox();
+         const Box& nbx = mfi.nodaltilebox();
          const auto ncomp = state_mf.nComp();
     
          const auto& state_fab = state_mf.array(mfi);
@@ -2649,7 +2651,7 @@ void AmrCoreAdv::smear_gauge (MultiFab& smeared_mf, MultiFab& state_mf, int lev,
          const auto& smeared_tmp_fab = smeared_tmp_mf -> array(mfi);
     
           // For each grid, loop over all the valid points
-         amrex::ParallelFor(bx,
+         amrex::ParallelFor(nbx,
          [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
          {
              state_project_smeared(i, j, k, smeared_fab, smeared_tmp_fab, time, dx, geom.data());
