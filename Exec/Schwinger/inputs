@@ -17,8 +17,8 @@ BiCGThresh = 1e-16
 BiCG_Max_Iter = 10000
 Use_BiCG_Stab = 0
 
-APE_iter = 1
-APE_alpha = 0.5 
+APE_iter = 0
+APE_alpha = 0 
 
 measWilsonLoops_Interval = 100
 CheckReversedTrajectoryInterval = 20
