@@ -987,7 +987,8 @@ AmrCoreAdv::Advance (int lev, Real time, Real dt_lev, int iteration, int ncycle,
     HMom = Action_Momentum(S_new);
     HTotal = HGauge + HMom;
     
-    amrex::Print() << "ACTION = " << HGauge << std::endl;
+    amrex::Print() << "GAUGE ACTION = " << HGauge << std::endl;
+    amrex::Print() << "MOMENTUM ACTION = " << HMom << std::endl;
     
     if(Param.use_dynamical_fermions)
         HTotal += Action_Fermi(S_new);
