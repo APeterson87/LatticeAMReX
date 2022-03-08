@@ -331,15 +331,15 @@ AmrCoreAdv::MakeNewLevelFromCoarse (int lev, Real time, const BoxArray& ba,
     const int ncomp = grid_new[lev-1].nComp();
     const int nghost = grid_new[lev-1].nGrow();
     
-    //BoxArray nba = ba;
+    BoxArray nba = ba;
     
-    //nba.surroundingNodes();
+    nba.surroundingNodes();
     
-    //grid_new[lev].define(nba, dm, ncomp, nghost);
-    //grid_old[lev].define(nba, dm, ncomp, nghost);
+    grid_new[lev].define(nba, dm, ncomp, nghost);
+    grid_old[lev].define(nba, dm, ncomp, nghost);
 
-    grid_new[lev].define(ba, dm, ncomp, nghost);
-    grid_old[lev].define(ba, dm, ncomp, nghost);
+    //grid_new[lev].define(ba, dm, ncomp, nghost);
+    //grid_old[lev].define(ba, dm, ncomp, nghost);
 
     t_new[lev] = time;
     t_old[lev] = time - 1.e200;
@@ -360,15 +360,15 @@ AmrCoreAdv::RemakeLevel (int lev, Real time, const BoxArray& ba,
     const int ncomp = grid_new[lev].nComp();
     const int nghost = grid_new[lev].nGrow();
     
-    //BoxArray nba = ba;
+    BoxArray nba = ba;
     
-    //nba.surroundingNodes();
+    nba.surroundingNodes();
     
-    //MultiFab new_state(nba, dm, ncomp, nghost);
-    //MultiFab old_state(nba, dm, ncomp, nghost);
+    MultiFab new_state(nba, dm, ncomp, nghost);
+    MultiFab old_state(nba, dm, ncomp, nghost);
 
-    MultiFab new_state(ba, dm, ncomp, nghost);
-    MultiFab old_state(ba, dm, ncomp, nghost);
+    //MultiFab new_state(ba, dm, ncomp, nghost);
+    //MultiFab old_state(ba, dm, ncomp, nghost);
 
     FillPatch(lev, time, new_state, 0, ncomp);
 
@@ -400,14 +400,14 @@ void AmrCoreAdv::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& ba
     const int ncomp = Idx::NumScalars;
     const int nghost = NUM_GHOST_CELLS;
     
-    //BoxArray nba = ba;
-    //nba.surroundingNodes();
+    BoxArray nba = ba;
+    nba.surroundingNodes();
     
-    //grid_new[lev].define(nba, dm, ncomp, nghost);
-    //grid_old[lev].define(nba, dm, ncomp, nghost);
+    grid_new[lev].define(nba, dm, ncomp, nghost);
+    grid_old[lev].define(nba, dm, ncomp, nghost);
     
-    grid_new[lev].define(ba, dm, ncomp, nghost);
-    grid_old[lev].define(ba, dm, ncomp, nghost);
+    //grid_new[lev].define(ba, dm, ncomp, nghost);
+    //grid_old[lev].define(ba, dm, ncomp, nghost);
 
     t_new[lev] = time;
     t_old[lev] = time - 1.e200;
@@ -1373,14 +1373,14 @@ AmrCoreAdv::ReadCheckpointFile ()
         int ncomp = Idx::NumScalars;
         int nghost = NUM_GHOST_CELLS;
         
-        //BoxArray nba = grids[lev];
-        //nba.surroundingNodes();
+        BoxArray nba = grids[lev];
+        nba.surroundingNodes();
         
-        //grid_old[lev].define(nba, dmap[lev], ncomp, nghost);
-        //grid_new[lev].define(nba, dmap[lev], ncomp, nghost);
+        grid_old[lev].define(nba, dmap[lev], ncomp, nghost);
+        grid_new[lev].define(nba, dmap[lev], ncomp, nghost);
 
-        grid_old[lev].define(grids[lev], dmap[lev], ncomp, nghost);
-        grid_new[lev].define(grids[lev], dmap[lev], ncomp, nghost);
+        //grid_old[lev].define(grids[lev], dmap[lev], ncomp, nghost);
+        //grid_new[lev].define(grids[lev], dmap[lev], ncomp, nghost);
 
         // also create the time integrator for this level
         integrator[lev] = std::make_unique<TimeIntegrator<MultiFab> >(grid_old[lev]);
