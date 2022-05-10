@@ -253,6 +253,7 @@ AmrCoreAdv::Evolve ()
     */
     Sigma.close();
     
+    /*
     std::ofstream PiCorr("PionCorr.txt");
     for (int i = 0; i < Obs.pion_correlation.size(); i++)
     {
@@ -264,7 +265,7 @@ AmrCoreAdv::Evolve ()
         //amrex::Print() << std::endl;
         PiCorr << std::endl;
     }
-
+    */
     /*
     for(const auto &v : Obs.sigma_meas)
     {
@@ -275,8 +276,8 @@ AmrCoreAdv::Evolve ()
         Sigma << std::endl;
     }
     */
-    PiCorr.close();
-
+    //PiCorr.close();
+    
     amrex::Print() << "Average Values: ";
     for(const auto &e : Obs.sigma_ave) amrex::Print() << e << ", ";
     amrex::Print() << std::endl;
@@ -434,6 +435,45 @@ void AmrCoreAdv::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& ba
       {
         state_init(i, j, k, state_arr, cur_time, geom.data());
       });
+    }
+    
+    for ( MFIter mfi(state, TilingIfNotGPU()); mfi.isValid(); ++mfi )
+    {
+      const Box& bx = mfi.growntilebox();
+
+      const auto& state_arr = state.array(mfi);
+
+      // For each grid, loop over all the valid points
+      amrex::ParallelFor(bx,
+      [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+      {
+          if(i == 0 && k == 0)
+            amrex::Print() << state_arr(0, j, 0, Idx::chi_0_Real) << ' ';
+      });
+        amrex::Print() << std::endl;
+    }
+    
+    state.OverrideSync(geom.periodicity());
+    FlipSigns(lev, state, Idx::Phi_0_Real, 4);
+    FlipSigns(lev, state, Idx::DDinvPhi_0_Real, 4);
+    FlipSigns(lev, state, Idx::chi_0_Real, 4);
+    FlipSigns(lev, state, Idx::g3DinvPhi_0_Real, 4);
+    
+    for ( MFIter mfi(state, TilingIfNotGPU()); mfi.isValid(); ++mfi )
+    {
+      //const Box& bx = mfi.tilebox();
+      const Box& bx = mfi.growntilebox();
+
+      const auto& state_arr = state.array(mfi);
+
+      // For each grid, loop over all the valid points
+      amrex::ParallelFor(bx,
+      [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+      {
+          if(i == 0 && k == 0)
+            amrex::Print() << state_arr(0, j, 0, Idx::chi_0_Real) << ' ';
+      });
+        amrex::Print() << std::endl;
     }
 
     // also create the time integrator for this level
@@ -969,7 +1009,12 @@ AmrCoreAdv::Advance (int lev, Real time, Real dt_lev, int iteration, int ncycle,
     HTotalcurrent = HGaugecurrent + HMomcurrent;
     
     if(Param.use_dynamical_fermions)
-        HTotalcurrent += Action_Fermi_From_Chi(S_new);
+    {
+        HFermicurrent = Action_Fermi_From_Chi(S_new);
+        HTotalcurrent += HFermicurrent;
+        amrex::Print() << "Current FERMION ACTION = " << HFermicurrent << std::endl;
+    }
+    amrex::Print() << std::endl;
 
     Trajectory(S_new, lev,  time, geom_lev, Param);
     
@@ -986,7 +1031,12 @@ AmrCoreAdv::Advance (int lev, Real time, Real dt_lev, int iteration, int ncycle,
     HTotal = HGauge + HMom;
     
     if(Param.use_dynamical_fermions)
-        HTotal += Action_Fermi(S_new);
+    {
+        HFermi = Action_Fermi(S_new);
+        HTotal += HFermi;
+        amrex::Print() << "FERMI ACTION = " << HFermi << std::endl;
+    }
+    amrex::Print() << std::endl;
     
     Real r_loc = std::rand()/(static_cast <float> (RAND_MAX));
     
@@ -1792,6 +1842,7 @@ AmrCoreAdv::Fermi_BiCG_solve(MultiFab& S_new, int lev, Real time, const amrex::G
         
         beta = rsq_new/rsq;
         rsq = rsq_new;
+        //amrex::Print() << rsq << "\n";
         
         MultiFab::LinComb(*mfp, beta, *mfp, pIdx::p_0_Real, 1.0, *mfres, resIdx::res_0_Real, pIdx::p_0_Real, 4, 0);
         

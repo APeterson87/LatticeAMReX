@@ -32,6 +32,7 @@ namespace Idx {
                          g3DinvPhi_1_Real, 
                          g3DinvPhi_1_Imaginary,
                          TopChargeDensity,
+                         ActionDensity,
                          NumScalars}; 
 };
 

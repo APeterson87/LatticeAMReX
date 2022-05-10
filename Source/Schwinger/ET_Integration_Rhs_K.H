@@ -130,6 +130,22 @@ state_update_topChargeDensity(int i, int j, int k,
         amrex::Real topC = std::arg(w);
         
         state_fab(i, j, k, Idx::TopChargeDensity) = topC/(2*M_PI);
+        
+        amrex::Real U1_r = state_fab(i, j, k, Idx::U_0_Real);
+        amrex::Real U1_i = state_fab(i, j, k, Idx::U_0_Imaginary);
+        
+        amrex::Real U2_r = state_fab(i+1, j, k, Idx::U_1_Real);
+        amrex::Real U2_i = state_fab(i+1, j, k, Idx::U_1_Imaginary);
+        
+        amrex::Real U3_r = state_fab(i, j+1, k, Idx::U_0_Real);
+        amrex::Real U3_i = -state_fab(i, j+1, k, Idx::U_0_Imaginary);
+        
+        amrex::Real U4_r = state_fab(i, j, k, Idx::U_1_Real);
+        amrex::Real U4_i = -state_fab(i, j, k, Idx::U_1_Imaginary);
+        
+        amrex::Real plaq_re = U1_i*U2_i*U3_i*U4_i - U1_i*U2_i*U3_r*U4_r - U1_i*U2_r*U3_i*U4_r - U1_i*U2_r*U3_r*U4_i - U1_r*U2_i*U3_i*U4_r - U1_r*U2_i*U3_r*U4_i - U1_r*U2_r*U3_i*U4_i + U1_r*U2_r*U3_r*U4_r;
+        
+        state_fab(i, j, k, Idx::ActionDensity) = 1-plaq_re;
 }
 
 #endif
