@@ -1,5 +1,5 @@
 # Stopping Criteria
-max_step = 1000
+max_step = 1200
 num_therm_steps = 100
 starting_measurements_step = 200
 stop_time = 2000000.0
@@ -12,10 +12,10 @@ mass_0 = 0.1
 wilson_r = 1.0
 Temp_T = 1.0
 
-Use_Dynamical_Fermions = 0
-BiCGThresh = 1e-16
-BiCG_Max_Iter = 10000
-Use_BiCG_Stab = 0
+Use_Dynamical_Fermions = 1
+BiCGThresh = 1e-12
+BiCG_Max_Iter = 15000
+Use_BiCG_Stab = 0 
 
 APE_iter = 0
 APE_alpha = 0 
@@ -28,7 +28,7 @@ amr.n_cell = 16 16
 
 geometry.is_periodic = 1 1 
 geometry.coord_sys = 0 
-geometry.prob_lo = -16.0 -16.0 #-20.9805 -20.9805 -20.9805 
+geometry.prob_lo = 0 0 #-20.9805 -20.9805 -20.9805 
 geometry.prob_hi = 16.0 16.0 #20.9805 20.9805 20.9805 
 
 # Turn on verbosity in amr 
@@ -36,10 +36,10 @@ amr.v = 1
 
 # Refinement Parameters 
 amr.max_level = 0
-amr.max_grid_size = 16
+amr.max_grid_size = 8
 amr.ref_ratio = 2
 amr.n_error_buf = 1
-amr.blocking_factor = 16
+amr.blocking_factor = 8
 amr.regrid_int = 1
 
 # AMR Interpolation 

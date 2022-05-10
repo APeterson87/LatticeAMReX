@@ -9,7 +9,7 @@
 AMREX_GPU_DEVICE 
 inline 
 void 
-state_update_momentum(int i, int j, int k, 
+state_update_momentum(int i, int j, int k,
         amrex::Array4<amrex::Real> const& state_fab,
         const amrex::Real time,
         amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dx,
@@ -93,6 +93,8 @@ state_update_gauge(int i, int j, int k,
         const amrex::GeometryData& geom,
         amrex::Real dtau) noexcept 
 {
+        //state_fab(i, j, k, Idx::U_0_Real) = state_fab(i+1, j, k, Idx::U_0_Real);
+
         amrex::Real U_0_Real = state_fab(i, j, k, Idx::U_0_Real);
         amrex::Real U_0_Imaginary = state_fab(i, j, k, Idx::U_0_Imaginary);
         
@@ -108,6 +110,7 @@ state_update_gauge(int i, int j, int k,
         
         state_fab(i, j, k, Idx::U_1_Real) = std::cos(dtau*P_1)*U_1_Real - std::sin(dtau*P_1)*U_1_Imaginary;
         state_fab(i, j, k, Idx::U_1_Imaginary) = std::sin(dtau*P_1)*U_1_Real + std::cos(dtau*P_1)*U_1_Imaginary;
+        
 }
 
 AMREX_GPU_DEVICE 

@@ -210,7 +210,7 @@ private:
 
     void Set_res(MultiFab& res_mf, MultiFab& state_mf, const Geometry& geom, amrex::Real alpha);
     void Set_p(MultiFab& state_mf, MultiFab& res_mf, const Geometry& geom, amrex::Real beta);
-    void SetPhiFromChi(amrex::MultiFab& state_mf, int lev, amrex::Real time, amrex::Real m_0, amrex::Real r);
+    void SetPhiFromChi(amrex::MultiFab& state_mf, int lev, amrex::Real time, const Geometry& geom, amrex::Real m_0, amrex::Real r);
     void Set_g3DinvPhi (MultiFab& state_mf, const Geometry& geom, amrex::Real m_0, amrex::Real r);
     void Set_DDp (MultiFab& DDp_mf, MultiFab& p_mf, MultiFab& state_mf, const Geometry& geom, amrex::Real m_0, amrex::Real r);
     
