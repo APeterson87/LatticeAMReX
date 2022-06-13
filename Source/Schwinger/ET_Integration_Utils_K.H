@@ -20,6 +20,8 @@ struct Observables {
             std::vector<double> sigma_stdev;
     
             std::vector<std::vector<double>> pion_correlation;
+            std::vector<double> pion_corr_ave;
+            std::vector<double> pion_corr_stdev;
     
             Observables() : num_accepted(0), 
                             TimeSumAvePlaq(0), 
