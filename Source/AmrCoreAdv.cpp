@@ -105,6 +105,7 @@ AmrCoreAdv::Evolve ()
     for (int step = istep[0]; step < max_step && cur_time < stop_time; ++step)
     {
         
+        Perturb(grid_new, 0, cur_time);  //Perturb the state at level 0 only.
         
         //Make a copy of the entire state in grid_new before time stepping.
         
@@ -113,13 +114,17 @@ AmrCoreAdv::Evolve ()
             const DistributionMapping& dm_lev = grid_new[level].DistributionMap();
             
             grid_hold[level].define(ba_lev, dm_lev, grid_new[level].nComp(), grid_new[level].nGrow());
-            MultiFab::Copy(grid_hold[level],grid_new[level],0,0,Idx::NumScalars,grid_new[level].nGrow()); 
+            
+            //Copy U and P into grid_hold
+            MultiFab::Copy(grid_hold[level], grid_new[level], 0, 0, grid_new[level].nComp(), grid_new[level].nGrow()); 
                
         }
         
+        
+        
         amrex::Print() << "\nCoarse STEP " << step+1 << " starts ..." << std::endl;
         
-        Perturb(grid_new, 0, cur_time);  //Perturb the state at level 0 only.
+        
         
         ComputeDt();
         int lev = 0;
@@ -145,13 +150,27 @@ AmrCoreAdv::Evolve ()
         
         HTotal = HGauge + HMom;
         
-        amrex::Print() << "Exp[-Delta S] = " << std::exp(-HTotal+HTotalcurrent) << std::endl;
+        Real r_loc = std::rand()/(static_cast <float> (RAND_MAX));
         
-        /*
-        for (int level = 0; level <= finest_level; ++level) {
-            ResetLevel(level, cur_time, grid_hold);
-        }
-        */
+        amrex::Print() << "MCMC random number = " << r_loc << std::endl;
+        amrex::Print() << "Exp(-deltaH/T) = " << std::exp(-(HTotal-HTotalcurrent)) << std::endl;
+        amrex::Print() << "deltaH = " << HTotal - HTotalcurrent << std::endl;
+        
+        
+        amrex::Print() << "Total HCurrent = " << HTotalcurrent << std::endl;
+        amrex::Print() << "Total H = " << HTotal << std::endl;
+        
+        
+        
+        if(r_loc > std::exp(-(HTotal-HTotalcurrent)))
+           {
+               for (int level = 0; level <= finest_level; ++level) {
+                    ResetLevel(level, cur_time, grid_hold);
+               }
+           }
+        
+        
+        
         /*
         somefunction(grid_hold, grid_new)
         {
@@ -324,7 +343,7 @@ AmrCoreAdv::ResetLevel (int lev, Real time, amrex::Vector<amrex::MultiFab>& hold
     t_new[lev] = time;
     t_old[lev] = time - 1.e200;
     
-    MultiFab::Copy(grid_new[lev], hold_grid[lev], 0, 0, ncomp, nghost);
+    MultiFab::Copy(grid_new[lev], hold_grid[lev], Idx::U_0_Real, Idx::U_0_Real, 4, nghost);
 
     // also recreate the time integrator for this level
     //integrator[lev] = std::make_unique<TimeIntegrator<MultiFab> >(grid_old[lev]);
@@ -830,6 +849,8 @@ AmrCoreAdv::Advance (int lev, Real time, Real dt_lev, int iteration, int ncycle,
     MultiFab& S_new = grid_new[lev];
     
     const auto geom_lev = geom[lev];
+    
+    FillIntermediatePatch(lev, time, S_new, 0, S_new.nComp()); //Added?
     
     Trajectory(S_new, lev, time, geom_lev, Param);  //FillIntermediatePatch?
     
