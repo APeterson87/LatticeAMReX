@@ -10,8 +10,20 @@ namespace Idx {
                          U_1_Real, 
                          U_1_Imaginary,
                          P_0, 
-                         P_1, 
+                         P_1,
+                         Phi_0_Real, 
+                         Phi_0_Imaginary, 
+                         Phi_1_Real, 
+                         Phi_1_Imaginary, 
                          NumScalars}; 
+};
+
+namespace cIdx {
+         enum cIndexes {Real_0,
+                        Imaginary_0,
+                        Real_1,
+                        Imaginary_1,
+                        NumIndexes};
 };
 
 namespace InitIdx { 
