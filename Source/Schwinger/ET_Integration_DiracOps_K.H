@@ -1,0 +1,61 @@
+#ifndef ET_INTEGRATION_DIRACOPS_K_H
+#define ET_INTEGRATION_DIRACOPS_K_H
+
+#include <AMReX_REAL.H> 
+#include <AMReX_Array4.H> 
+#include <ET_Integration_Setup_K.H> 
+
+
+AMREX_GPU_DEVICE 
+inline 
+void 
+state_set_g3p(int i, int j, int k,
+        amrex::Array4<amrex::Real> const& g3p_fab,
+        amrex::Array4<amrex::Real> const& p_fab,
+        amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dx,
+        const amrex::GeometryData& geom) noexcept 
+{
+        
+        g3p_fab(i, j, k, cIdx::Real_0) = p_fab(i, j, k, cIdx::Real_0);
+        g3p_fab(i, j, k, cIdx::Imaginary_0) = p_fab(i, j, k, cIdx::Imaginary_0);
+        g3p_fab(i, j, k, cIdx::Real_1) = -p_fab(i, j, k, cIdx::Real_1);
+        g3p_fab(i, j, k, cIdx::Imaginary_1) = -p_fab(i, j, k, cIdx::Imaginary_1);
+        
+        
+}
+
+AMREX_GPU_DEVICE 
+inline 
+void 
+state_set_g3Dp(int i, int j, int k, 
+        amrex::Array4<amrex::Real> const& g3Dp_fab,
+        amrex::Array4<amrex::Real> const& p_fab,
+        amrex::Array4<amrex::Real> const& state_fab,
+        amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dx,
+        const amrex::GeometryData& geom,
+        amrex::Real m_0,
+        amrex::Real r) noexcept 
+{
+        /*Needs to be fixed*/
+        amrex::Real g3Dp_0_Real = 0.5*r*p_fab(i + 1, j, k, pIdx::p_0_Imaginary)*state_fab(i, j, k, Idx::U_0_Imaginary) - 0.5*r*p_fab(i + 1, j, k, pIdx::p_0_Real)*state_fab(i, j, k, Idx::U_0_Real) - 0.5*r*p_fab(i - 1, j, k, pIdx::p_0_Imaginary)*state_fab(i - 1, j, k, Idx::U_0_Imaginary) - 0.5*r*p_fab(i - 1, j, k, pIdx::p_0_Real)*state_fab(i - 1, j, k, Idx::U_0_Real) + 0.5*r*p_fab(i, j + 1, k, pIdx::p_0_Imaginary)*state_fab(i, j, k, Idx::U_1_Imaginary) - 0.5*r*p_fab(i, j + 1, k, pIdx::p_0_Real)*state_fab(i, j, k, Idx::U_1_Real) - 0.5*r*p_fab(i, j - 1, k, pIdx::p_0_Imaginary)*state_fab(i, j - 1, k, Idx::U_1_Imaginary) - 0.5*r*p_fab(i, j - 1, k, pIdx::p_0_Real)*state_fab(i, j - 1, k, Idx::U_1_Real) + (m_0 + 2*r)*p_fab(i, j, k, pIdx::p_0_Real) - 0.5*p_fab(i + 1, j, k, pIdx::p_1_Imaginary)*state_fab(i, j, k, Idx::U_0_Imaginary) + 0.5*p_fab(i + 1, j, k, pIdx::p_1_Real)*state_fab(i, j, k, Idx::U_0_Real) - 0.5*p_fab(i - 1, j, k, pIdx::p_1_Imaginary)*state_fab(i - 1, j, k, Idx::U_0_Imaginary) - 0.5*p_fab(i - 1, j, k, pIdx::p_1_Real)*state_fab(i - 1, j, k, Idx::U_0_Real) + 0.5*p_fab(i, j + 1, k, pIdx::p_1_Imaginary)*state_fab(i, j, k, Idx::U_1_Real) + 0.5*p_fab(i, j + 1, k, pIdx::p_1_Real)*state_fab(i, j, k, Idx::U_1_Imaginary) - 0.5*p_fab(i, j - 1, k, pIdx::p_1_Imaginary)*state_fab(i, j - 1, k, Idx::U_1_Real) + 0.5*p_fab(i, j - 1, k, pIdx::p_1_Real)*state_fab(i, j - 1, k, Idx::U_1_Imaginary);
+
+
+
+        amrex::Real g3Dp_0_Imaginary = -0.5*r*p_fab(i + 1, j, k, pIdx::p_0_Imaginary)*state_fab(i, j, k, Idx::U_0_Real) - 0.5*r*p_fab(i + 1, j, k, pIdx::p_0_Real)*state_fab(i, j, k, Idx::U_0_Imaginary) - 0.5*r*p_fab(i - 1, j, k, pIdx::p_0_Imaginary)*state_fab(i - 1, j, k, Idx::U_0_Real) + 0.5*r*p_fab(i - 1, j, k, pIdx::p_0_Real)*state_fab(i - 1, j, k, Idx::U_0_Imaginary) - 0.5*r*p_fab(i, j + 1, k, pIdx::p_0_Imaginary)*state_fab(i, j, k, Idx::U_1_Real) - 0.5*r*p_fab(i, j + 1, k, pIdx::p_0_Real)*state_fab(i, j, k, Idx::U_1_Imaginary) - 0.5*r*p_fab(i, j - 1, k, pIdx::p_0_Imaginary)*state_fab(i, j - 1, k, Idx::U_1_Real) + 0.5*r*p_fab(i, j - 1, k, pIdx::p_0_Real)*state_fab(i, j - 1, k, Idx::U_1_Imaginary) + (m_0 + 2*r)*p_fab(i, j, k, pIdx::p_0_Imaginary) + 0.5*p_fab(i + 1, j, k, pIdx::p_1_Imaginary)*state_fab(i, j, k, Idx::U_0_Real) + 0.5*p_fab(i + 1, j, k, pIdx::p_1_Real)*state_fab(i, j, k, Idx::U_0_Imaginary) - 0.5*p_fab(i - 1, j, k, pIdx::p_1_Imaginary)*state_fab(i - 1, j, k, Idx::U_0_Real) + 0.5*p_fab(i - 1, j, k, pIdx::p_1_Real)*state_fab(i - 1, j, k, Idx::U_0_Imaginary) + 0.5*p_fab(i, j + 1, k, pIdx::p_1_Imaginary)*state_fab(i, j, k, Idx::U_1_Imaginary) - 0.5*p_fab(i, j + 1, k, pIdx::p_1_Real)*state_fab(i, j, k, Idx::U_1_Real) + 0.5*p_fab(i, j - 1, k, pIdx::p_1_Imaginary)*state_fab(i, j - 1, k, Idx::U_1_Imaginary) + 0.5*p_fab(i, j - 1, k, pIdx::p_1_Real)*state_fab(i, j - 1, k, Idx::U_1_Real);
+
+
+
+        amrex::Real g3Dp_1_Real = -0.5*r*p_fab(i + 1, j, k, pIdx::p_1_Imaginary)*state_fab(i, j, k, Idx::U_0_Imaginary) + 0.5*r*p_fab(i + 1, j, k, pIdx::p_1_Real)*state_fab(i, j, k, Idx::U_0_Real) + 0.5*r*p_fab(i - 1, j, k, pIdx::p_1_Imaginary)*state_fab(i - 1, j, k, Idx::U_0_Imaginary) + 0.5*r*p_fab(i - 1, j, k, pIdx::p_1_Real)*state_fab(i - 1, j, k, Idx::U_0_Real) - 0.5*r*p_fab(i, j + 1, k, pIdx::p_1_Imaginary)*state_fab(i, j, k, Idx::U_1_Imaginary) + 0.5*r*p_fab(i, j + 1, k, pIdx::p_1_Real)*state_fab(i, j, k, Idx::U_1_Real) + 0.5*r*p_fab(i, j - 1, k, pIdx::p_1_Imaginary)*state_fab(i, j - 1, k, Idx::U_1_Imaginary) + 0.5*r*p_fab(i, j - 1, k, pIdx::p_1_Real)*state_fab(i, j - 1, k, Idx::U_1_Real) - (m_0 + 2*r)*p_fab(i, j, k, pIdx::p_1_Real) + 0.5*p_fab(i + 1, j, k, pIdx::p_0_Imaginary)*state_fab(i, j, k, Idx::U_0_Imaginary) - 0.5*p_fab(i + 1, j, k, pIdx::p_0_Real)*state_fab(i, j, k, Idx::U_0_Real) + 0.5*p_fab(i - 1, j, k, pIdx::p_0_Imaginary)*state_fab(i - 1, j, k, Idx::U_0_Imaginary) + 0.5*p_fab(i - 1, j, k, pIdx::p_0_Real)*state_fab(i - 1, j, k, Idx::U_0_Real) + 0.5*p_fab(i, j + 1, k, pIdx::p_0_Imaginary)*state_fab(i, j, k, Idx::U_1_Real) + 0.5*p_fab(i, j + 1, k, pIdx::p_0_Real)*state_fab(i, j, k, Idx::U_1_Imaginary) - 0.5*p_fab(i, j - 1, k, pIdx::p_0_Imaginary)*state_fab(i, j - 1, k, Idx::U_1_Real) + 0.5*p_fab(i, j - 1, k, pIdx::p_0_Real)*state_fab(i, j - 1, k, Idx::U_1_Imaginary);
+
+
+
+        amrex::Real g3Dp_1_Imaginary = 0.5*r*p_fab(i + 1, j, k, pIdx::p_1_Imaginary)*state_fab(i, j, k, Idx::U_0_Real) + 0.5*r*p_fab(i + 1, j, k, pIdx::p_1_Real)*state_fab(i, j, k, Idx::U_0_Imaginary) + 0.5*r*p_fab(i - 1, j, k, pIdx::p_1_Imaginary)*state_fab(i - 1, j, k, Idx::U_0_Real) - 0.5*r*p_fab(i - 1, j, k, pIdx::p_1_Real)*state_fab(i - 1, j, k, Idx::U_0_Imaginary) + 0.5*r*p_fab(i, j + 1, k, pIdx::p_1_Imaginary)*state_fab(i, j, k, Idx::U_1_Real) + 0.5*r*p_fab(i, j + 1, k, pIdx::p_1_Real)*state_fab(i, j, k, Idx::U_1_Imaginary) + 0.5*r*p_fab(i, j - 1, k, pIdx::p_1_Imaginary)*state_fab(i, j - 1, k, Idx::U_1_Real) - 0.5*r*p_fab(i, j - 1, k, pIdx::p_1_Real)*state_fab(i, j - 1, k, Idx::U_1_Imaginary) - (m_0 + 2*r)*p_fab(i, j, k, pIdx::p_1_Imaginary) - 0.5*p_fab(i + 1, j, k, pIdx::p_0_Imaginary)*state_fab(i, j, k, Idx::U_0_Real) - 0.5*p_fab(i + 1, j, k, pIdx::p_0_Real)*state_fab(i, j, k, Idx::U_0_Imaginary) + 0.5*p_fab(i - 1, j, k, pIdx::p_0_Imaginary)*state_fab(i - 1, j, k, Idx::U_0_Real) - 0.5*p_fab(i - 1, j, k, pIdx::p_0_Real)*state_fab(i - 1, j, k, Idx::U_0_Imaginary) + 0.5*p_fab(i, j + 1, k, pIdx::p_0_Imaginary)*state_fab(i, j, k, Idx::U_1_Imaginary) - 0.5*p_fab(i, j + 1, k, pIdx::p_0_Real)*state_fab(i, j, k, Idx::U_1_Real) + 0.5*p_fab(i, j - 1, k, pIdx::p_0_Imaginary)*state_fab(i, j - 1, k, Idx::U_1_Imaginary) + 0.5*p_fab(i, j - 1, k, pIdx::p_0_Real)*state_fab(i, j - 1, k, Idx::U_1_Real);
+        
+        g3Dp_fab(i, j, k, pIdx::p_0_Real) = g3Dp_0_Real;
+        g3Dp_fab(i, j, k, pIdx::p_0_Imaginary) = g3Dp_0_Imaginary;
+        g3Dp_fab(i, j, k, pIdx::p_1_Real) = g3Dp_1_Real;
+        g3Dp_fab(i, j, k, pIdx::p_1_Imaginary) = g3Dp_1_Imaginary;
+        
+}
+
+#endif
