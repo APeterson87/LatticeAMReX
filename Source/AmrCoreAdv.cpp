@@ -78,6 +78,7 @@ AmrCoreAdv::Evolve ()
     int last_plot_file_step = 0;
     int last_chk_file_step = 0;
     int last_diag_file_step = 0;
+    srand (static_cast <unsigned> (time(0)));
     
     /* Find a better place for this declaration*/
     
@@ -102,10 +103,11 @@ AmrCoreAdv::Evolve ()
                      .checkrevtraj_Interval = Check_revTraj_Int};
     /*/////////////////////////////////////////////////////////////*/
 
+    int num_accepted = 0;
+    
     for (int step = istep[0]; step < max_step && cur_time < stop_time; ++step)
     {
         
-        Perturb(grid_new, 0, cur_time);  //Perturb the state at level 0 only.
         
         //Make a copy of the entire state in grid_new before time stepping.
         
@@ -116,9 +118,11 @@ AmrCoreAdv::Evolve ()
             grid_hold[level].define(ba_lev, dm_lev, grid_new[level].nComp(), grid_new[level].nGrow());
             
             //Copy U and P into grid_hold
-            MultiFab::Copy(grid_hold[level], grid_new[level], 0, 0, grid_new[level].nComp(), grid_new[level].nGrow()); 
+            MultiFab::Copy(grid_hold[level], grid_new[level], Idx::U_0_Real, Idx::U_0_Real, 4, grid_new[level].nGrow()); 
                
         }
+        
+        Perturb(grid_new, 0, cur_time);  //Perturb the state at level 0 only.
         
         
         
@@ -130,25 +134,17 @@ AmrCoreAdv::Evolve ()
         int lev = 0;
         int iteration = 1;
         
+        
+        Real HGaugecurrent = Action_Gauge(grid_new[0], Param.beta);
+        Real HMomcurrent = Action_Momentum(grid_new[0]);
+        Real HTotalcurrent = HGaugecurrent + HMomcurrent;
+        
         timeStep(lev, cur_time, iteration, Param);
         
-        Real HGaugecurrent;
-        Real HMomcurrent;
-        Real HTotalcurrent;
         
-        HGaugecurrent = Action_Gauge(grid_hold[0], Param.beta);
-        HMomcurrent = Action_Momentum(grid_hold[0]);
-        
-        HTotalcurrent = HGaugecurrent + HMomcurrent;
-            
-        Real HGauge;
-        Real HMom;
-        Real HTotal;
-        
-        HGauge = Action_Gauge(grid_new[0], Param.beta);
-        HMom = Action_Momentum(grid_new[0]);
-        
-        HTotal = HGauge + HMom;
+        Real HGauge = Action_Gauge(grid_new[0], Param.beta);
+        Real HMom = Action_Momentum(grid_new[0]);
+        Real HTotal = HGauge + HMom;
         
         Real r_loc = std::rand()/(static_cast <float> (RAND_MAX));
         
@@ -162,12 +158,18 @@ AmrCoreAdv::Evolve ()
         
         
         
-        if(r_loc > std::exp(-(HTotal-HTotalcurrent)))
-           {
-               for (int level = 0; level <= finest_level; ++level) {
-                    ResetLevel(level, cur_time, grid_hold);
-               }
-           }
+        if(r_loc > std::exp(-(HTotal-HTotalcurrent)/Temp_T) && istep[0] >= Param.therm_steps)
+        {
+            for (int level = 0; level <= finest_level; ++level) {
+                ResetLevel(level, cur_time, grid_hold);
+            }
+            amrex::Print() << "NEW STATE REJECTED " << std::endl;
+        }
+        else if(step > Param.starting_meas_step)
+        {
+            num_accepted++;
+            amrex::Print() << "NEW STATE ACCEPTED " << std::endl;
+        }
         
         
         
@@ -227,6 +229,10 @@ AmrCoreAdv::Evolve ()
 
         if (cur_time >= stop_time - 1.e-6*dt[0]) break;
     }
+    
+    amrex::Print() << "\nFinal Acceptance Rate = " << static_cast<float>(num_accepted)/static_cast<float>(max_step-start_meas_step) << std::endl;
+    
+    
 
     if (plot_int > 0 && istep[0] > last_plot_file_step) {
         WritePlotFile();
