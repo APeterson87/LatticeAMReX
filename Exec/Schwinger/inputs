@@ -1,7 +1,7 @@
 # Stopping Criteria
-max_step = 1000
-num_therm_steps = 10
-starting_measurements_step = 20
+max_step = 200
+num_therm_steps = 100
+starting_measurements_step = 200
 stop_time = 2000000.0
 
 num_hmc_substeps = 10
@@ -24,7 +24,7 @@ measWilsonLoops_Interval = 100
 CheckReversedTrajectoryInterval = 1000
 
 # Problem Size & Geometry 
-amr.n_cell = 8 8
+amr.n_cell = 16 16
 
 geometry.is_periodic = 1 1 
 geometry.coord_sys = 0 
