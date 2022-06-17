@@ -17,7 +17,7 @@ state_post_update(int i, int j, int k,
         amrex::Real epsilon) noexcept 
 {
         const auto domain_xlo = geom.ProbLo();
-        
+        /*
         amrex::Real U_0_Real = state_fab(i, j, k, Idx::U_0_Real);
         amrex::Real U_0_Imaginary = state_fab(i, j, k, Idx::U_0_Imaginary);
         
@@ -33,6 +33,6 @@ state_post_update(int i, int j, int k,
         
         state_fab(i, j, k, Idx::U_1_Real) = std::cos(epsilon*P_1)*U_1_Real - std::sin(epsilon*P_1)*U_1_Imaginary;
         state_fab(i, j, k, Idx::U_1_Imaginary) = std::sin(epsilon*P_1)*U_1_Real + std::cos(epsilon*P_1)*U_1_Imaginary;
-
+        */
 }
 #endif

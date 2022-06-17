@@ -1,1 +1,6 @@
-names = {"U_0_Real", "U_0_Imaginary", "U_1_Real", "U_1_Imaginary", "Ucurrent_0_Real", "Ucurrent_0_Imaginary", "Ucurrent_1_Real", "Ucurrent_1_Imaginary", "P_0", "Pcurrent_0", "P_1", "Pcurrent_1"};
+names = {"U_0_Real", 
+         "U_0_Imaginary", 
+         "U_1_Real", 
+         "U_1_Imaginary", 
+         "P_0", 
+         "P_1"};

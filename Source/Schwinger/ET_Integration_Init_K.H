@@ -18,25 +18,26 @@ state_init(int i, int j, int k,
         amrex::Real theta_0 = 2*M_PI*(amrex::Random()-0.5);
         amrex::Real theta_1 = 2*M_PI*(amrex::Random()-0.5);
         
+        
         amrex::Real P_0 = amrex::RandomNormal(0,1);
         amrex::Real P_1 = amrex::RandomNormal(0,1);
         
         state_fab(i, j, k, Idx::U_0_Real) = std::cos(theta_0);
-        state_fab(i, j, k, Idx::Ucurrent_0_Real) = std::cos(theta_0);
+        //state_fab(i, j, k, Idx::Ucurrent_0_Real) = std::cos(theta_0);
         
         state_fab(i, j, k, Idx::U_0_Imaginary) = std::sin(theta_0);
-        state_fab(i, j, k, Idx::Ucurrent_0_Imaginary) = std::sin(theta_0);
+        //state_fab(i, j, k, Idx::Ucurrent_0_Imaginary) = std::sin(theta_0);
         
         state_fab(i, j, k, Idx::U_1_Real) = std::cos(theta_1);
-        state_fab(i, j, k, Idx::Ucurrent_1_Real) = std::cos(theta_1);
+        //state_fab(i, j, k, Idx::Ucurrent_1_Real) = std::cos(theta_1);
         
         state_fab(i, j, k, Idx::U_1_Imaginary) = std::sin(theta_1);
-        state_fab(i, j, k, Idx::Ucurrent_1_Imaginary) = std::sin(theta_1);
+        //state_fab(i, j, k, Idx::Ucurrent_1_Imaginary) = std::sin(theta_1);
         
         state_fab(i, j, k, Idx::P_0) = P_0;
-        state_fab(i, j, k, Idx::Pcurrent_0) = P_0;
+        //state_fab(i, j, k, Idx::Pcurrent_0) = P_0;
         state_fab(i, j, k, Idx::P_1) = P_1;
-        state_fab(i, j, k, Idx::Pcurrent_1) = P_1;
+        //state_fab(i, j, k, Idx::Pcurrent_1) = P_1;
         
 }
 #endif

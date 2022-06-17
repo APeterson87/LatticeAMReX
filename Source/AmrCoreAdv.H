@@ -73,7 +73,10 @@ public:
     // overrides the pure virtual function in AmrCore
     virtual void RemakeLevel (int lev, amrex::Real time, const amrex::BoxArray& ba,
 			      const amrex::DistributionMapping& dm) override;
-
+    
+    void ResetLevel (int lev, Real time, amrex::Vector<amrex::MultiFab>& hold_grid);
+    
+    
     // Delete level data
     // overrides the pure virtual function in AmrCore
     virtual void ClearLevel (int lev) override;
@@ -124,10 +127,10 @@ private:
 
     // advance a level by dt
     // includes a recursive call for finer levels
-    void timeStep (int lev, amrex::Real time, int iteration);
+    void timeStep (int lev, amrex::Real time, int iteration, Parameters Param);
 
     // advance a single level for a single time step
-    void Advance (int lev, amrex::Real time, amrex::Real dt_lev, int iteration, int ncycle);
+    void Advance (int lev, amrex::Real time, amrex::Real dt_lev, int iteration, int ncycle, Parameters Param);
 
     // a wrapper for EstTimeStep(0
     void ComputeDt ();
@@ -175,12 +178,29 @@ private:
 
     // Single level functions called by advance()
     void post_update (amrex::MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom);
-    void MCMC_update (amrex::MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom, bool state_is_accepted);
+    //void MCMC_update (amrex::MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom, bool state_is_accepted);
     void fill_rhs (amrex::MultiFab& rhs_mf, const amrex::MultiFab& state_mf, const amrex::Real time, const amrex::Geometry& geom, amrex::Real factor);
     void fill_state_diagnostics (amrex::MultiFab& diag_mf, const amrex::MultiFab& state_mf, const amrex::Real time_lev, const amrex::Geometry& geom) const;
+    
+    /* My Functions */    
+    
+    void Perturb (amrex::Vector<amrex::MultiFab>& state, int lev, amrex::Real time);
+    
+    void Trajectory(MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
+    
+    void update_momentum (MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
+    
+    void update_gauge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param, amrex::Real dtau);
+    
+    amrex::Real Action_Gauge(amrex::MultiFab& state_mf, amrex::Real beta);
+    amrex::Real Action_Momentum(amrex::MultiFab& state_mf);
+    
+    /* End of My Functions*/
+    
+    
     ////////////////
     
-    amrex::Real SumAction(amrex::MultiFab& state_mf);
+    //amrex::Real SumAction(amrex::MultiFab& state_mf);
     // private data members
 
     amrex::Vector<int> istep;      // which step?
@@ -195,6 +215,7 @@ private:
     // after advancing a level we use "swap".
     amrex::Vector<amrex::MultiFab> grid_new;
     amrex::Vector<amrex::MultiFab> grid_old;
+    amrex::Vector<amrex::MultiFab> grid_hold;  
 
     // array of time integrator objects at each level of refinement
     amrex::Vector<std::unique_ptr<TimeIntegrator<MultiFab> > > integrator;
@@ -211,12 +232,32 @@ private:
 
     // maximum number of steps and stop time
     int max_step = std::numeric_limits<int>::max();
+    int num_therm_steps = 100;
+    int start_meas_step = 200;
     
     amrex::Real stop_time = std::numeric_limits<amrex::Real>::max();
     
-    int n_substeps = 10;
+    int num_hmc_substeps = 10;
+    Real hmc_tau = 1.0;
     
-    amrex::Real Temp_T = 0.5;
+    amrex::Real coupling_beta = 1.0;
+    amrex::Real mass_0 = 0.1;
+    amrex::Real wilson_r = 1.0;
+    amrex::Real Temp_T = 1.0;
+    
+    
+    bool use_dynamical_fermi = true;
+    amrex::Real BiCGThresh = 1e-5;
+    int BiCG_Max_Iter = 100;
+    bool Use_BiCG_Stab = false;
+    
+    amrex::Real APE_alpha = 0.5;
+    int APE_iter = 2;
+    
+    int measWL_Interval = 10;
+    int Check_revTraj_Int = 5;
+    
+    Vector<int> numcells;
 
     // if >= 0 we restart from a checkpoint
     std::string restart_chkfile = "";
