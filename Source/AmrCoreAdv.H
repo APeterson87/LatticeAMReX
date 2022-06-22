@@ -195,6 +195,9 @@ private:
     amrex::Real Action_Gauge(amrex::MultiFab& state_mf, amrex::Real beta);
     amrex::Real Action_Momentum(amrex::MultiFab& state_mf);
     
+    void Set_g3p (MultiFab& g3p_mf, MultiFab& p_mf, const Geometry& geom);
+    void Set_g1p (MultiFab& g1p_mf, MultiFab& p_mf, const Geometry& geom);
+    void Set_g2p (MultiFab& g2p_mf, MultiFab& p_mf, const Geometry& geom);
     /* End of My Functions*/
     
     

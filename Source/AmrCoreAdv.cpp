@@ -1564,3 +1564,72 @@ Real AmrCoreAdv::Action_Momentum (MultiFab& state_mf)
     
     return action;
 }
+
+void AmrCoreAdv::Set_g3p (MultiFab& g3p_mf, MultiFab& p_mf, const Geometry& geom)
+{
+    const auto dx = geom.CellSizeArray();
+    
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+  for ( MFIter mfi(p_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
+  {
+    const Box& bx = mfi.tilebox();
+
+    const auto& g3p_fab = g3p_mf.array(mfi);
+    const auto& p_fab = p_mf.array(mfi); 
+    
+    amrex::ParallelFor(bx,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        state_set_g3p(i, j, k, g3p_fab, p_fab, dx, geom.data());
+    });
+      
+  }
+}
+
+void AmrCoreAdv::Set_g1p (MultiFab& g1p_mf, MultiFab& p_mf, const Geometry& geom)
+{
+    const auto dx = geom.CellSizeArray();
+    
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+  for ( MFIter mfi(p_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
+  {
+    const Box& bx = mfi.tilebox();
+
+    const auto& g1p_fab = g1p_mf.array(mfi);
+    const auto& p_fab = p_mf.array(mfi); 
+    
+    amrex::ParallelFor(bx,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        state_set_g1p(i, j, k, g1p_fab, p_fab, dx, geom.data());
+    });
+      
+  }
+}
+
+void AmrCoreAdv::Set_g2p (MultiFab& g2p_mf, MultiFab& p_mf, const Geometry& geom)
+{
+    const auto dx = geom.CellSizeArray();
+    
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+  for ( MFIter mfi(p_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
+  {
+    const Box& bx = mfi.tilebox();
+
+    const auto& g2p_fab = g2p_mf.array(mfi);
+    const auto& p_fab = p_mf.array(mfi); 
+    
+    amrex::ParallelFor(bx,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        state_set_g2p(i, j, k, g2p_fab, p_fab, dx, geom.data());
+    });
+      
+  }
+}
