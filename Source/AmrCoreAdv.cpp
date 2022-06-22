@@ -497,7 +497,7 @@ void AmrCoreAdv::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& ba
         amrex::Print() << std::endl;
     }
     
-    state.OverrideSync(geom.periodicity());
+    //state.OverrideSync(geom.periodicity());
     FlipSigns(lev, state, Idx::Phi_0_Real, 4);
     FlipSigns(lev, state, Idx::DDinvPhi_0_Real, 4);
     FlipSigns(lev, state, Idx::chi_0_Real, 4);
@@ -1662,7 +1662,7 @@ AmrCoreAdv::Trajectory(MultiFab& state_mf, int lev, const amrex::Real time, cons
             MultiFab::Copy(state_mf, *x_mf, cIdx::Real_0, Idx::DDinvPhi_0_Real, 4, NUM_GHOST_CELLS);
             
             Set_g3DinvPhi(state_mf, geom, Param.mass, Param.r);
-            state_mf.OverrideSync(geom.periodicity());
+            //state_mf.OverrideSync(geom.periodicity());
             FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
             FlipSigns(lev, state_mf, Idx::Phi_0_Real, 4);
             FlipSigns(lev, state_mf, Idx::DDinvPhi_0_Real, 4);
@@ -1713,7 +1713,7 @@ AmrCoreAdv::Trajectory(MultiFab& state_mf, int lev, const amrex::Real time, cons
             MultiFab::Copy(state_mf, *x_mf, cIdx::Real_0, Idx::DDinvPhi_0_Real, 4, NUM_GHOST_CELLS);
             
             Set_g3DinvPhi(state_mf, geom, Param.mass, Param.r);
-            state_mf.OverrideSync(geom.periodicity());
+            //state_mf.OverrideSync(geom.periodicity());
             FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
             FlipSigns(lev, state_mf, Idx::Phi_0_Real, 4);
             FlipSigns(lev, state_mf, Idx::DDinvPhi_0_Real, 4);
