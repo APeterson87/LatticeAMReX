@@ -200,6 +200,9 @@ private:
     void Set_g2p (MultiFab& g2p_mf, MultiFab& p_mf, const Geometry& geom);
     
     void Set_Dp (MultiFab& Dp_mf, MultiFab& p_mf, MultiFab& U_mf, Parameters Param);
+    void Set_g3Dp (MultiFab& g3Dp_mf, MultiFab& p_mf, MultiFab& U_mf, Parameters Param);
+    
+    void General_BiCG_solve(MultiFab& x_mf, const MultiFab& b_mf, MultiFab& U_mf, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
     /* End of My Functions*/
     
     

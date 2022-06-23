@@ -83,4 +83,30 @@ state_set_Dp(int i, int j, int k,
         
 }
 
+AMREX_GPU_DEVICE 
+inline 
+void 
+state_set_g3Dp(int i, int j, int k, 
+        amrex::Array4<amrex::Real> const& g3Dp_fab,
+        amrex::Array4<amrex::Real> const& p_fab,
+        amrex::Array4<amrex::Real> const& U_fab,
+        amrex::Real m_0) noexcept 
+{
+        
+        amrex::Real g3Dp_Real_0 = (m_0 + 2)*p_fab(i, j, k, cIdx::Real_0) + U_fab(i - 1, j, k, cIdx::Imaginary_0)*p_fab(i - 1, j, k, cIdx::Imaginary_0) + U_fab(i - 1, j, k, cIdx::Imaginary_0)*p_fab(i - 1, j, k, cIdx::Imaginary_1) + U_fab(i - 1, j, k, cIdx::Real_0)*p_fab(i - 1, j, k, cIdx::Real_0) + U_fab(i - 1, j, k, cIdx::Real_0)*p_fab(i - 1, j, k, cIdx::Real_1) + U_fab(i, j - 1, k, cIdx::Imaginary_1)*p_fab(i, j - 1, k, cIdx::Imaginary_0) - U_fab(i, j - 1, k, cIdx::Imaginary_1)*p_fab(i, j - 1, k, cIdx::Real_1) + U_fab(i, j - 1, k, cIdx::Real_1)*p_fab(i, j - 1, k, cIdx::Imaginary_1) + U_fab(i, j - 1, k, cIdx::Real_1)*p_fab(i, j - 1, k, cIdx::Real_0) - U_fab(i, j, k, cIdx::Imaginary_0)*p_fab(i + 1, j, k, cIdx::Imaginary_0) + U_fab(i, j, k, cIdx::Imaginary_0)*p_fab(i + 1, j, k, cIdx::Imaginary_1) - U_fab(i, j, k, cIdx::Imaginary_1)*p_fab(i, j + 1, k, cIdx::Imaginary_0) - U_fab(i, j, k, cIdx::Imaginary_1)*p_fab(i, j + 1, k, cIdx::Real_1) + U_fab(i, j, k, cIdx::Real_0)*p_fab(i + 1, j, k, cIdx::Real_0) - U_fab(i, j, k, cIdx::Real_0)*p_fab(i + 1, j, k, cIdx::Real_1) - U_fab(i, j, k, cIdx::Real_1)*p_fab(i, j + 1, k, cIdx::Imaginary_1) + U_fab(i, j, k, cIdx::Real_1)*p_fab(i, j + 1, k, cIdx::Real_0);
+       
+        amrex::Real g3Dp_Real_1 = (-m_0 - 2)*p_fab(i, j, k, cIdx::Real_1) - U_fab(i - 1, j, k, cIdx::Imaginary_0)*p_fab(i - 1, j, k, cIdx::Imaginary_0) - U_fab(i - 1, j, k, cIdx::Imaginary_0)*p_fab(i - 1, j, k, cIdx::Imaginary_1) - U_fab(i - 1, j, k, cIdx::Real_0)*p_fab(i - 1, j, k, cIdx::Real_0) - U_fab(i - 1, j, k, cIdx::Real_0)*p_fab(i - 1, j, k, cIdx::Real_1) - U_fab(i, j - 1, k, cIdx::Imaginary_1)*p_fab(i, j - 1, k, cIdx::Imaginary_1) - U_fab(i, j - 1, k, cIdx::Imaginary_1)*p_fab(i, j - 1, k, cIdx::Real_0) + U_fab(i, j - 1, k, cIdx::Real_1)*p_fab(i, j - 1, k, cIdx::Imaginary_0) - U_fab(i, j - 1, k, cIdx::Real_1)*p_fab(i, j - 1, k, cIdx::Real_1) - U_fab(i, j, k, cIdx::Imaginary_0)*p_fab(i + 1, j, k, cIdx::Imaginary_0) + U_fab(i, j, k, cIdx::Imaginary_0)*p_fab(i + 1, j, k, cIdx::Imaginary_1) + U_fab(i, j, k, cIdx::Imaginary_1)*p_fab(i, j + 1, k, cIdx::Imaginary_1) - U_fab(i, j, k, cIdx::Imaginary_1)*p_fab(i, j + 1, k, cIdx::Real_0) + U_fab(i, j, k, cIdx::Real_0)*p_fab(i + 1, j, k, cIdx::Real_0) - U_fab(i, j, k, cIdx::Real_0)*p_fab(i + 1, j, k, cIdx::Real_1) - U_fab(i, j, k, cIdx::Real_1)*p_fab(i, j + 1, k, cIdx::Imaginary_0) - U_fab(i, j, k, cIdx::Real_1)*p_fab(i, j + 1, k, cIdx::Real_1);
+
+
+        amrex::Real g3Dp_Imaginary_0 = (m_0 + 2)*p_fab(i, j, k, cIdx::Imaginary_0) - U_fab(i - 1, j, k, cIdx::Imaginary_0)*p_fab(i - 1, j, k, cIdx::Real_0) - U_fab(i - 1, j, k, cIdx::Imaginary_0)*p_fab(i - 1, j, k, cIdx::Real_1) + U_fab(i - 1, j, k, cIdx::Real_0)*p_fab(i - 1, j, k, cIdx::Imaginary_0) + U_fab(i - 1, j, k, cIdx::Real_0)*p_fab(i - 1, j, k, cIdx::Imaginary_1) - U_fab(i, j - 1, k, cIdx::Imaginary_1)*p_fab(i, j - 1, k, cIdx::Imaginary_1) - U_fab(i, j - 1, k, cIdx::Imaginary_1)*p_fab(i, j - 1, k, cIdx::Real_0) + U_fab(i, j - 1, k, cIdx::Real_1)*p_fab(i, j - 1, k, cIdx::Imaginary_0) - U_fab(i, j - 1, k, cIdx::Real_1)*p_fab(i, j - 1, k, cIdx::Real_1) + U_fab(i, j, k, cIdx::Imaginary_0)*p_fab(i + 1, j, k, cIdx::Real_0) - U_fab(i, j, k, cIdx::Imaginary_0)*p_fab(i + 1, j, k, cIdx::Real_1) - U_fab(i, j, k, cIdx::Imaginary_1)*p_fab(i, j + 1, k, cIdx::Imaginary_1) + U_fab(i, j, k, cIdx::Imaginary_1)*p_fab(i, j + 1, k, cIdx::Real_0) + U_fab(i, j, k, cIdx::Real_0)*p_fab(i + 1, j, k, cIdx::Imaginary_0) - U_fab(i, j, k, cIdx::Real_0)*p_fab(i + 1, j, k, cIdx::Imaginary_1) + U_fab(i, j, k, cIdx::Real_1)*p_fab(i, j + 1, k, cIdx::Imaginary_0) + U_fab(i, j, k, cIdx::Real_1)*p_fab(i, j + 1, k, cIdx::Real_1);
+        
+        amrex::Real g3Dp_Imaginary_1 = (-m_0 - 2)*p_fab(i, j, k, cIdx::Imaginary_1) + U_fab(i - 1, j, k, cIdx::Imaginary_0)*p_fab(i - 1, j, k, cIdx::Real_0) + U_fab(i - 1, j, k, cIdx::Imaginary_0)*p_fab(i - 1, j, k, cIdx::Real_1) - U_fab(i - 1, j, k, cIdx::Real_0)*p_fab(i - 1, j, k, cIdx::Imaginary_0) - U_fab(i - 1, j, k, cIdx::Real_0)*p_fab(i - 1, j, k, cIdx::Imaginary_1) - U_fab(i, j - 1, k, cIdx::Imaginary_1)*p_fab(i, j - 1, k, cIdx::Imaginary_0) + U_fab(i, j - 1, k, cIdx::Imaginary_1)*p_fab(i, j - 1, k, cIdx::Real_1) - U_fab(i, j - 1, k, cIdx::Real_1)*p_fab(i, j - 1, k, cIdx::Imaginary_1) - U_fab(i, j - 1, k, cIdx::Real_1)*p_fab(i, j - 1, k, cIdx::Real_0) + U_fab(i, j, k, cIdx::Imaginary_0)*p_fab(i + 1, j, k, cIdx::Real_0) - U_fab(i, j, k, cIdx::Imaginary_0)*p_fab(i + 1, j, k, cIdx::Real_1) - U_fab(i, j, k, cIdx::Imaginary_1)*p_fab(i, j + 1, k, cIdx::Imaginary_0) - U_fab(i, j, k, cIdx::Imaginary_1)*p_fab(i, j + 1, k, cIdx::Real_1) + U_fab(i, j, k, cIdx::Real_0)*p_fab(i + 1, j, k, cIdx::Imaginary_0) - U_fab(i, j, k, cIdx::Real_0)*p_fab(i + 1, j, k, cIdx::Imaginary_1) - U_fab(i, j, k, cIdx::Real_1)*p_fab(i, j + 1, k, cIdx::Imaginary_1) + U_fab(i, j, k, cIdx::Real_1)*p_fab(i, j + 1, k, cIdx::Real_0);
+        
+        g3Dp_fab(i, j, k, cIdx::Real_0) = g3Dp_Real_0;
+        g3Dp_fab(i, j, k, cIdx::Imaginary_0) = g3Dp_Imaginary_0;
+        g3Dp_fab(i, j, k, cIdx::Real_1) = g3Dp_Real_1;
+        g3Dp_fab(i, j, k, cIdx::Imaginary_1) = g3Dp_Imaginary_1;
+        
+}
+
 #endif
