@@ -122,7 +122,7 @@ AmrCoreAdv::Evolve ()
                
         }
         
-        Perturb(grid_new, 0, cur_time);  //Perturb the state at level 0 only.
+        Perturb(grid_new, 0, cur_time, Param);  //Perturb the state at level 0 only.
         
         
         
@@ -1400,12 +1400,13 @@ void AmrCoreAdv::fill_state_diagnostics (MultiFab& diag_mf, const MultiFab& stat
   }
 }
 
-void AmrCoreAdv::Perturb (Vector<MultiFab>& state, int lev, Real time)
+void AmrCoreAdv::Perturb (Vector<MultiFab>& state, int lev, Real time, Parameters Param)
 {
     MultiFab& state_mf = state[lev];
     
-    //const auto dx = geom.CellSizeArray();
-    int ncomp = state_mf.nComp();
+    const BoxArray& ba_lev = state_mf.boxArray();
+    const DistributionMapping& dm_lev = state_mf.DistributionMap();
+    
 
 #ifdef _OPENMP
 #pragma omp parallel
@@ -1426,7 +1427,40 @@ void AmrCoreAdv::Perturb (Vector<MultiFab>& state, int lev, Real time)
     });
   }
     
-    FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
+    MultiFab tmp_fermi_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
+    MultiFab::Swap(tmp_fermi_mf, state_mf, Idx::Phi_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
+    
+    MultiFab fermi_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
+    
+    MultiFab U_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
+    MultiFab::Swap(U_mf, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
+    
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+  for ( MFIter mfi(tmp_fermi_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
+  {
+    const Box& bx = mfi.tilebox();
+    const auto ncomp = tmp_fermi_mf.nComp();
+
+    const auto& tmp_fermi_fab = tmp_fermi_mf.array(mfi);
+
+    // For each grid, loop over all the valid points
+
+    amrex::ParallelFor(bx,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        fermi_Perturbation(i, j, k, tmp_fermi_fab, time);
+    });
+  }
+    
+  Set_Dp(fermi_mf, tmp_fermi_mf, U_mf, Param);
+    
+  MultiFab::Swap(state_mf, fermi_mf,  cIdx::Real_0, Idx::Phi_0_Real, 4, state_mf.nGrow());
+  
+  MultiFab::Swap(state_mf, U_mf, cIdx::Real_0, Idx::U_0_Real, 4, state_mf.nGrow());
+    
+  FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
 }
 
 void 
@@ -1435,19 +1469,19 @@ AmrCoreAdv::Trajectory(MultiFab& state_mf, int lev, const amrex::Real time, cons
     
     
     Real dtau = Param.tau/Param.hmc_substeps;
-    update_momentum(state_mf, lev, time, geom, Param, dtau/2.0);
+    update_momentum(state_mf, state_mf, state_mf, lev, time, geom, Param, dtau/2.0);
     
     //auto solve = &AmrCoreAdv::Fermi_Solve;
     
     for(int i = 1; i < Param.hmc_substeps; i++)
     {
         update_gauge(state_mf, lev, time, geom, Param, dtau);
-        update_momentum(state_mf, lev, time, geom, Param, dtau);
+        update_momentum(state_mf, state_mf, state_mf, lev, time, geom, Param, dtau);
         
     }
     
     update_gauge(state_mf, lev, time, geom, Param, dtau);        
-    update_momentum(state_mf, lev, time, geom, Param, dtau/2.0);
+    update_momentum(state_mf, state_mf, state_mf, lev, time, geom, Param, dtau/2.0);
 }
 
 void AmrCoreAdv::update_gauge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param, amrex::Real dtau)
@@ -1476,9 +1510,15 @@ void AmrCoreAdv::update_gauge (MultiFab& state_mf, int lev, const amrex::Real ti
   FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
 }
 
-void AmrCoreAdv::update_momentum (MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau)
+void AmrCoreAdv::update_momentum (MultiFab& state_mf, MultiFab& Ainvp_mf, MultiFab& g3Dpsi_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau)
 {
   const auto dx = geom.CellSizeArray();
+    
+  const BoxArray& ba_lev = state_mf.boxArray();
+  const DistributionMapping& dm_lev = state_mf.DistributionMap(); 
+    
+  MultiFab U_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
+  MultiFab::Swap(U_mf, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
 
 #ifdef _OPENMP
 #pragma omp parallel
@@ -1489,14 +1529,20 @@ void AmrCoreAdv::update_momentum (MultiFab& state_mf, int lev, const amrex::Real
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi);
+    const auto& U_fab = U_mf.array(mfi);
+    const auto& Ainvp_fab = Ainvp_mf.array(mfi);
+    const auto& g3Dpsi_fab = g3Dpsi_mf.array(mfi);
 
     // For each grid, loop over all the valid points
     amrex::ParallelFor(bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-      state_update_momentum(i, j, k, state_fab, time, dx, geom.data(), Param.mass, Param.r, Param.beta, Param.use_dynamical_fermions, dtau);
+      state_update_momentum(i, j, k, state_fab, U_fab, Ainvp_fab, g3Dpsi_fab, time, dx, geom.data(), Param.mass, Param.r, Param.beta, Param.use_dynamical_fermions, dtau);
     });
   }
+    
+ MultiFab::Swap(state_mf, U_mf, cIdx::Real_0, Idx::U_0_Real, 4, state_mf.nGrow());
+    
 }
 
 Real AmrCoreAdv::Action_Gauge (MultiFab& state_mf, Real beta)
@@ -1629,6 +1675,32 @@ void AmrCoreAdv::Set_g2p (MultiFab& g2p_mf, MultiFab& p_mf, const Geometry& geom
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         state_set_g2p(i, j, k, g2p_fab, p_fab, dx, geom.data());
+    });
+      
+  }
+}
+
+void AmrCoreAdv::Set_Dp (MultiFab& Dp_mf, MultiFab& p_mf, MultiFab& U_mf, Parameters Param)
+{
+    //const auto dx = geom.CellSizeArray();
+    //int ncomp = U_mf.nComp();
+    
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+  for ( MFIter mfi(U_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
+  {
+    const Box& bx = mfi.tilebox();
+    const auto ncomp = U_mf.nComp();
+
+    const auto& Dp_fab = Dp_mf.array(mfi);
+    const auto& p_fab = p_mf.array(mfi); 
+    const auto& U_fab = U_mf.array(mfi);
+    
+    amrex::ParallelFor(bx,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        state_set_Dp(i, j, k, Dp_fab, p_fab, U_fab, Param.mass);
     });
       
   }

@@ -184,11 +184,11 @@ private:
     
     /* My Functions */    
     
-    void Perturb (amrex::Vector<amrex::MultiFab>& state, int lev, amrex::Real time);
+    void Perturb (amrex::Vector<amrex::MultiFab>& state, int lev, amrex::Real time, Parameters Param);
     
     void Trajectory(MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
     
-    void update_momentum (MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
+    void update_momentum (MultiFab& state_mf, MultiFab& Ainvp_mf, MultiFab& g3Dpsi_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
     
     void update_gauge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param, amrex::Real dtau);
     
@@ -198,6 +198,8 @@ private:
     void Set_g3p (MultiFab& g3p_mf, MultiFab& p_mf, const Geometry& geom);
     void Set_g1p (MultiFab& g1p_mf, MultiFab& p_mf, const Geometry& geom);
     void Set_g2p (MultiFab& g2p_mf, MultiFab& p_mf, const Geometry& geom);
+    
+    void Set_Dp (MultiFab& Dp_mf, MultiFab& p_mf, MultiFab& U_mf, Parameters Param);
     /* End of My Functions*/
     
     
