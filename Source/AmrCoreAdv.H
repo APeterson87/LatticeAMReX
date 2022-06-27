@@ -194,13 +194,15 @@ private:
     
     amrex::Real Action_Gauge(amrex::MultiFab& state_mf, amrex::Real beta);
     amrex::Real Action_Momentum(amrex::MultiFab& state_mf);
+    amrex::Real Action_Fermi(amrex::MultiFab& state_mf, amrex::MultiFab& Ainvp_mf);
     
-    void Set_g3p (MultiFab& g3p_mf, MultiFab& p_mf, const Geometry& geom);
-    void Set_g1p (MultiFab& g1p_mf, MultiFab& p_mf, const Geometry& geom);
-    void Set_g2p (MultiFab& g2p_mf, MultiFab& p_mf, const Geometry& geom);
+    void Set_g3p (MultiFab& g3p_mf, MultiFab& p_mf, int lev, Real time);
+    void Set_g1p (MultiFab& g1p_mf, MultiFab& p_mf, int lev, Real time);
+    void Set_g2p (MultiFab& g2p_mf, MultiFab& p_mf, int lev, Real time);
     
-    void Set_Dp (MultiFab& Dp_mf, MultiFab& p_mf, MultiFab& U_mf, Parameters Param);
-    void Set_g3Dp (MultiFab& g3Dp_mf, MultiFab& p_mf, MultiFab& U_mf, Parameters Param);
+    void Set_Dp (MultiFab& Dp_mf, MultiFab& p_mf, MultiFab& U_mf, int lev, amrex::Real time, Parameters Param);
+    void Set_g3Dp (MultiFab& g3Dp_mf, MultiFab& p_mf, MultiFab& U_mf, int lev, amrex::Real time, Parameters Param);
+    void Set_g3Dg3Dp (MultiFab& g3Dg3Dp_mf, MultiFab& p_mf, MultiFab& U_mf, int lev, Real time, Parameters Param);
     
     void General_BiCG_solve(MultiFab& x_mf, const MultiFab& b_mf, MultiFab& U_mf, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
     /* End of My Functions*/

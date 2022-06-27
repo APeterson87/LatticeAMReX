@@ -52,4 +52,22 @@ sum_action_mom(const int i, const int j, const int k,
         return delta_action;
 }
 
+AMREX_GPU_DEVICE 
+inline 
+amrex::Real
+sum_action_D(const int i, const int j, const int k, 
+        amrex::Array4<amrex::Real> const& state_fab,
+        amrex::Array4<amrex::Real> const& Ainvp_fab) 
+{
+        
+        amrex::Real PhiDDinvPhi_0_r = state_fab(i, j, k, Idx::Phi_0_Real)*Ainvp_fab(i, j, k, cIdx::Real_0); 
+        amrex::Real PhiDDinvPhi_0_i = state_fab(i, j, k, Idx::Phi_0_Imaginary)*Ainvp_fab(i, j, k, cIdx::Imaginary_0); 
+        amrex::Real PhiDDinvPhi_1_r = state_fab(i, j, k, Idx::Phi_1_Real)*Ainvp_fab(i, j, k, cIdx::Real_1); 
+        amrex::Real PhiDDinvPhi_1_i = state_fab(i, j, k, Idx::Phi_1_Imaginary)*Ainvp_fab(i, j, k, cIdx::Imaginary_1); 
+        
+        amrex::Real delta_action = (PhiDDinvPhi_0_r+ PhiDDinvPhi_0_i + PhiDDinvPhi_1_r + PhiDDinvPhi_1_i) ;
+    
+        return delta_action;
+}
+
 #endif
