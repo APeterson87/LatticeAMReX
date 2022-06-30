@@ -90,6 +90,8 @@ public:
     // tag all cells for refinement
     // overrides the pure virtual function in AmrCore
     virtual void ErrorEst (int lev, amrex::TagBoxArray& tags, amrex::Real time, int ngrow) override;
+    
+    void Fermi_BiCG_Solve(MultiFab& S_new, MultiFab& aux_mf, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
 
 private:
 
@@ -184,27 +186,36 @@ private:
     
     /* My Functions */    
     
-    void Perturb (amrex::Vector<amrex::MultiFab>& state, int lev, amrex::Real time, Parameters Param);
+    void Perturb (amrex::MultiFab& state, int lev, amrex::Real time, Parameters Param);
     
-    void Trajectory(MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
+    void Trajectory(MultiFab& state_mf, MultiFab& aux_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
     
-    void update_momentum (MultiFab& state_mf, MultiFab& Ainvp_mf, MultiFab& g3Dpsi_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
+    void update_momentum (MultiFab& state_mf, MultiFab& aux_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
     
     void update_gauge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param, amrex::Real dtau);
     
-    amrex::Real Action_Gauge(amrex::MultiFab& state_mf, amrex::Real beta);
-    amrex::Real Action_Momentum(amrex::MultiFab& state_mf);
-    amrex::Real Action_Fermi(amrex::MultiFab& state_mf, amrex::MultiFab& Ainvp_mf);
+    void ResetDDinvPhi(amrex::MultiFab& state_mf);
+
+    void Set_DDinvPhi(MultiFab& state_mf, MultiFab& p_mf, const Geometry& geom, amrex::Real alpha);
+
+    void Set_res(MultiFab& res_mf, MultiFab& state_mf, const Geometry& geom, amrex::Real alpha);
+    void Set_p(MultiFab& state_mf, MultiFab& res_mf, const Geometry& geom, amrex::Real beta);
+    void SetPhiFromChi(amrex::MultiFab& state_mf, int lev, amrex::Real time, amrex::Real m_0, amrex::Real r);
+    void Set_g3DinvPhi (MultiFab& state_mf, MultiFab& aux_mf, const Geometry& geom, int lev, amrex::Real time, amrex::Real m_0, amrex::Real r);
+    void Set_DDp (MultiFab& DDp_mf, MultiFab& p_mf, MultiFab& state_mf, const Geometry& geom, amrex::Real m_0, amrex::Real r);
     
     void Set_g3p (MultiFab& g3p_mf, MultiFab& p_mf, int lev, Real time);
-    void Set_g1p (MultiFab& g1p_mf, MultiFab& p_mf, int lev, Real time);
-    void Set_g2p (MultiFab& g2p_mf, MultiFab& p_mf, int lev, Real time);
+    void Set_g3Dp (MultiFab& g3Dp_mf, MultiFab& p_mf, MultiFab& state_mf, Parameters Param);
     
-    void Set_Dp (MultiFab& Dp_mf, MultiFab& p_mf, MultiFab& U_mf, int lev, amrex::Real time, Parameters Param);
-    void Set_g3Dp (MultiFab& g3Dp_mf, MultiFab& p_mf, MultiFab& U_mf, int lev, amrex::Real time, Parameters Param);
-    void Set_g3Dg3Dp (MultiFab& g3Dg3Dp_mf, MultiFab& p_mf, MultiFab& U_mf, int lev, Real time, Parameters Param);
+    void Set_g3Dp_new (MultiFab& g3Dp_mf, MultiFab& p_mf, MultiFab& U_mf, Parameters Param);
     
-    void General_BiCG_solve(MultiFab& x_mf, const MultiFab& b_mf, MultiFab& U_mf, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
+    void Set_Dp (MultiFab& Dp_mf, MultiFab& p_mf, MultiFab& U_mf, int lev, Real time, Parameters Param);
+    
+    amrex::Real Action_Gauge(amrex::MultiFab& state_mf, amrex::Real beta);
+    amrex::Real Action_Momentum(amrex::MultiFab& state_mf);
+    amrex::Real Action_Fermi(amrex::MultiFab& state_mf, amrex::MultiFab& aux_mf);
+    amrex::Real Action_Fermi_From_Chi (MultiFab& state_mf);
+
     /* End of My Functions*/
     
     
@@ -225,7 +236,8 @@ private:
     // after advancing a level we use "swap".
     amrex::Vector<amrex::MultiFab> grid_new;
     amrex::Vector<amrex::MultiFab> grid_old;
-    amrex::Vector<amrex::MultiFab> grid_hold;  
+    amrex::Vector<amrex::MultiFab> grid_hold;
+    amrex::Vector<amrex::MultiFab> grid_aux;
 
     // array of time integrator objects at each level of refinement
     amrex::Vector<std::unique_ptr<TimeIntegrator<MultiFab> > > integrator;

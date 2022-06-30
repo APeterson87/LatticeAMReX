@@ -13,10 +13,12 @@
 #include <ET_Integration_Rhs_K.H>
 #include <ET_Integration_Diag_K.H>
 #include <ET_Integration_Post_Update_K.H>
+#include <ET_Integration_Fermion_Update_K.H>
 #include <ET_Integration_Perturb_K.H>
 #include <ET_Integration_AMR_Cell_Tag_K.H>
-#include <ET_Integration_Utils_K.H>
 #include <ET_Integration_Sum_Action_K.H>
+#include <ET_Integration_Measurements_K.H>
+#include <ET_Integration_Utils_K.H>
 #include <ET_Integration_DiracOps_K.H>
 
 #ifdef PROBLEM_LOADS_INITDATA

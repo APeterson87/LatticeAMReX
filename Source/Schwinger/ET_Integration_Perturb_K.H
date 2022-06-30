@@ -19,6 +19,14 @@ state_Perturbation(int i, int j, int k,
         state_fab(i, j, k, Idx::P_0) = P_0;
         state_fab(i, j, k, Idx::P_1) = P_1;
         
+        /*
+        state_fab(i, j, k, Idx::chi_0_Real) = amrex::RandomNormal(0,1)/std::sqrt(2);
+        state_fab(i, j, k, Idx::chi_0_Imaginary) = amrex::RandomNormal(0,1)/std::sqrt(2);
+        state_fab(i, j, k, Idx::chi_1_Real) = amrex::RandomNormal(0,1)/std::sqrt(2);
+        state_fab(i, j, k, Idx::chi_1_Imaginary) = amrex::RandomNormal(0,1)/std::sqrt(2);
+        */
+        
+        
 }
 
 AMREX_GPU_DEVICE 
@@ -35,5 +43,7 @@ fermi_Perturbation(int i, int j, int k,
         fermi_fab(i, j, k, cIdx::Imaginary_1) = amrex::RandomNormal(0,1)/std::sqrt(2);
         
 }
+
+
 
 #endif
