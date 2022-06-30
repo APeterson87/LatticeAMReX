@@ -1,5 +1,5 @@
 # Stopping Criteria
-max_step = 1200
+max_step = 10200
 num_therm_steps = 100
 starting_measurements_step = 200
 stop_time = 2000000.0
@@ -35,7 +35,7 @@ geometry.prob_hi = 16.0 16.0 #20.9805 20.9805 20.9805
 amr.v = 1
 
 # Refinement Parameters 
-amr.max_level = 1
+amr.max_level = 0
 amr.max_grid_size = 8
 amr.ref_ratio = 2
 amr.n_error_buf = 1
