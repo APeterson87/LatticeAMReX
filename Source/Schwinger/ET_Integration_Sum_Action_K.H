@@ -65,34 +65,8 @@ sum_action_D(const int i, const int j, const int k,
         amrex::Real PhiDDinvPhi_1_r = state_fab(i, j, k, Idx::Phi_1_Real)*aux_fab(i, j, k, auxIdx::DDinvPhi_1_Real); 
         amrex::Real PhiDDinvPhi_1_i = state_fab(i, j, k, Idx::Phi_1_Imaginary)*aux_fab(i, j, k, auxIdx::DDinvPhi_1_Imaginary); 
         
-        /*
-        amrex::Real PhiDDinvPhi_0_r = state_fab(i, j, k, Idx::Phi_0_Real)*aux_fab(i, j, k, cIdx::Real_0); 
-        amrex::Real PhiDDinvPhi_0_i = state_fab(i, j, k, Idx::Phi_0_Imaginary)*aux_fab(i, j, k, cIdx::Imaginary_0); 
-        amrex::Real PhiDDinvPhi_1_r = state_fab(i, j, k, Idx::Phi_1_Real)*aux_fab(i, j, k, cIdx::Real_1); 
-        amrex::Real PhiDDinvPhi_1_i = state_fab(i, j, k, Idx::Phi_1_Imaginary)*aux_fab(i, j, k, cIdx::Imaginary_1); 
-        */
         amrex::Real delta_action = (PhiDDinvPhi_0_r+ PhiDDinvPhi_0_i + PhiDDinvPhi_1_r + PhiDDinvPhi_1_i) ;
     
         return delta_action;
 }
-
-AMREX_GPU_DEVICE 
-inline 
-amrex::Real
-sum_action_chi(const int i, const int j, const int k, 
-        amrex::Array4<amrex::Real> const& state_fab) 
-{
-        /*
-        amrex::Real chi_0_r = state_fab(i, j, k, Idx::chi_0_Real)*state_fab(i, j, k, Idx::chi_0_Real); 
-        amrex::Real chi_0_i = state_fab(i, j, k, Idx::chi_0_Imaginary)*state_fab(i, j, k, Idx::chi_0_Imaginary); 
-        amrex::Real chi_1_r = state_fab(i, j, k, Idx::chi_1_Real)*state_fab(i, j, k, Idx::chi_1_Real); 
-        amrex::Real chi_1_i = state_fab(i, j, k, Idx::chi_1_Imaginary)*state_fab(i, j, k, Idx::chi_1_Imaginary);  
-        
-        amrex::Real delta_action = (chi_0_r + chi_0_i + chi_1_r + chi_1_i);
-        */
-    
-        return 0; //delta_action;
-
-}
-
 #endif

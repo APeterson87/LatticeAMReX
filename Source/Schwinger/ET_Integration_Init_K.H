@@ -24,44 +24,13 @@ state_init(int i, int j, int k,
         amrex::Real P_0 = amrex::RandomNormal(0,1);
         amrex::Real P_1 = amrex::RandomNormal(0,1);
         
-        state_fab(i, j, k, Idx::U_0_Real) = std::cos(theta_0);
-        //state_fab(i, j, k, Idx::Ucurrent_0_Real) = std::cos(theta_0);
-        
+        state_fab(i, j, k, Idx::U_0_Real) = std::cos(theta_0); 
         state_fab(i, j, k, Idx::U_0_Imaginary) = std::sin(theta_0);
-        //state_fab(i, j, k, Idx::Ucurrent_0_Imaginary) = std::sin(theta_0);
-        
         state_fab(i, j, k, Idx::U_1_Real) = std::cos(theta_1);
-        //state_fab(i, j, k, Idx::Ucurrent_1_Real) = std::cos(theta_1);
-        
         state_fab(i, j, k, Idx::U_1_Imaginary) = std::sin(theta_1);
-        //state_fab(i, j, k, Idx::Ucurrent_1_Imaginary) = std::sin(theta_1);
-        
+
         state_fab(i, j, k, Idx::P_0) = P_0;
         state_fab(i, j, k, Idx::P_1) = P_1;
-
-        
-        //state_fab(i, j, k, Idx::Phi_0_Real) = -std::pow(M_PI/20,2)*std::pow(std::cos(x0*M_PI/20),4)*std::pow(std::cos(x1*M_PI/20),4); //amrex::RandomNormal(0,1);
-        //state_fab(i, j, k, Idx::Phi_0_Imaginary) = -std::pow(M_PI/20,2)*std::pow(std::cos(x0*M_PI/20),4)*std::pow(std::cos(x1*M_PI/20),4);  //amrex::RandomNormal(0,1);
-        //state_fab(i, j, k, Idx::Phi_1_Real) = -std::pow(M_PI/20,2)*std::pow(std::cos(x0*M_PI/20),4)*std::pow(std::cos(x1*M_PI/20),4);  //amrex::RandomNormal(0,1)
-        //state_fab(i, j, k, Idx::Phi_1_Imaginary) = -std::pow(M_PI/20,2)*std::pow(std::cos(x0*M_PI/20),4)*std::pow(std::cos(x1*M_PI/20),4);  //amrex::RandomNormal(0,1);
-        /*
-        state_fab(i, j, k, Idx::chi_0_Real) = amrex::RandomNormal(0,1)/std::sqrt(2);
-        state_fab(i, j, k, Idx::chi_0_Imaginary) = amrex::RandomNormal(0,1)/std::sqrt(2);
-        state_fab(i, j, k, Idx::chi_1_Real) = amrex::RandomNormal(0,1)/std::sqrt(2);
-        state_fab(i, j, k, Idx::chi_1_Imaginary) = amrex::RandomNormal(0,1)/std::sqrt(2);
-        */
-        /*
-        state_fab(i, j, k, Idx::res_0_Real) = -std::exp(-(x0*x0+x1*x1)/10.);//amrex::RandomNormal(0,1);
-        state_fab(i, j, k, Idx::res_0_Imaginary) = -std::exp(-(x0*x0+x1*x1)/10.);//amrex::RandomNormal(0,1);
-        state_fab(i, j, k, Idx::res_1_Real) = -std::exp(-(x0*x0+x1*x1)/10.);//amrex::RandomNormal(0,1);
-        state_fab(i, j, k, Idx::res_1_Imaginary) = -std::exp(-(x0*x0+x1*x1)/10.);//amrex::RandomNormal(0,1);
-        
-        state_fab(i, j, k, Idx::p_0_Real) = -std::exp(-(x0*x0+x1*x1)/10.);//amrex::RandomNormal(0,1);
-        state_fab(i, j, k, Idx::p_0_Imaginary) = -std::exp(-(x0*x0+x1*x1)/10.);//amrex::RandomNormal(0,1);
-        state_fab(i, j, k, Idx::p_1_Real) = -std::exp(-(x0*x0+x1*x1)/10.);//amrex::RandomNormal(0,1);
-        state_fab(i, j, k, Idx::p_1_Imaginary) = -std::exp(-(x0*x0+x1*x1)/10.);//amrex::RandomNormal(0,1);
-        
-        */
         
         
 }

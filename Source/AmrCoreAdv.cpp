@@ -130,42 +130,38 @@ AmrCoreAdv::Evolve ()
         int iteration = 1;
         
         cur_time += dt[0];
-        
-        const auto geom_lev = geom[0];
-        
-        const BoxArray& ba = grid_new[0].boxArray();
-        const DistributionMapping& dm = grid_new[0].DistributionMap();
-            
-        MultiFab fermi_fab(ba, dm, 4, grid_new[0].nGrow());
-        
-        Perturb(grid_new[0], lev, cur_time, Param);
-        
-        
-        
-        //FillIntermediatePatch(lev, cur_time, grid_new[0], 0, grid_new[0].nComp());
-    
-        if(Param.use_dynamical_fermions)
+        for (int level = 0; level <= finest_level; ++level)
         {
-            
-            MultiFab x_mf(ba, dm, 4, grid_new[0].nGrow());
-            
-            MultiFab::Swap(x_mf, grid_aux[0], auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, grid_aux[0].nGrow()); 
-            
-            MultiFab b_mf(ba, dm, 4, grid_new[0].nGrow());
-            
-            MultiFab::Swap(b_mf, grid_new[0], Idx::Phi_0_Real, cIdx::Real_0, 4, grid_new[0].nGrow());
-            
-            BiCG_Solve(x_mf, b_mf, grid_new[0], lev, cur_time, geom_lev, Param);
-            
-            MultiFab::Swap(x_mf, grid_aux[0], auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, grid_aux[0].nGrow()); 
-            
-            MultiFab::Swap(b_mf, grid_new[0], Idx::Phi_0_Real, cIdx::Real_0, 4, grid_aux[0].nGrow());
-            
-            //BiCG_Solve(grid_new[0], grid_aux[0], 0, cur_time, geom_lev, Param);
-
-            Set_g3DinvPhi(grid_new[0], grid_aux[0], geom_lev, lev, cur_time, Param.mass, Param.r);
-        }
+            const auto geom_lev = geom[level];
         
+            const BoxArray& ba = grid_new[level].boxArray();
+            const DistributionMapping& dm = grid_new[level].DistributionMap();
+            
+            
+
+            Perturb(grid_new[level], level, cur_time, Param);
+            
+            if(Param.use_dynamical_fermions)
+            {
+                
+                MultiFab x_mf(ba, dm, 4, grid_new[level].nGrow());
+                
+                MultiFab::Swap(x_mf, grid_aux[level], auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, grid_aux[level].nGrow()); 
+            
+                MultiFab b_mf(ba, dm, 4, grid_new[level].nGrow());
+            
+                MultiFab::Swap(b_mf, grid_new[level], Idx::Phi_0_Real, cIdx::Real_0, 4, grid_new[level].nGrow());
+
+                BiCG_Solve(x_mf, b_mf, grid_new[level], level, cur_time, geom_lev, Param);
+                
+                MultiFab::Swap(x_mf, grid_aux[level], auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, grid_aux[0].nGrow()); 
+            
+                MultiFab::Swap(b_mf, grid_new[level], Idx::Phi_0_Real, cIdx::Real_0, 4, grid_aux[level].nGrow());
+
+                Set_g3DinvPhi(grid_new[level], grid_aux[level], geom_lev, level, cur_time, Param.mass, Param.r);
+            }
+                            
+        }
         Real HGaugecurrent;
         Real HMomcurrent;
         Real HFermicurrent;
@@ -174,6 +170,8 @@ AmrCoreAdv::Evolve ()
         Real HMom;
         Real HFermi;
         Real HTotal;
+        
+
         
         HGaugecurrent = Action_Gauge(grid_new[0], Param.beta);
         HMomcurrent = Action_Momentum(grid_new[0]);
@@ -1388,7 +1386,7 @@ void AmrCoreAdv::Perturb (MultiFab& state_mf, int lev, Real time, Parameters Par
     
     const BoxArray& ba_lev = state_mf.boxArray();
     const DistributionMapping& dm_lev = state_mf.DistributionMap();
-    
+
 
 #ifdef _OPENMP
 #pragma omp parallel
@@ -1408,7 +1406,7 @@ void AmrCoreAdv::Perturb (MultiFab& state_mf, int lev, Real time, Parameters Par
         state_Perturbation(i, j, k, state_fab, time);
     });
   }
-    
+
     MultiFab tmp_fermi_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
     MultiFab::Swap(tmp_fermi_mf, state_mf, Idx::Phi_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
     
@@ -1416,7 +1414,7 @@ void AmrCoreAdv::Perturb (MultiFab& state_mf, int lev, Real time, Parameters Par
     MultiFab::Swap(U_mf, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
     
     MultiFab fermi_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
-    
+
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
@@ -1435,20 +1433,16 @@ void AmrCoreAdv::Perturb (MultiFab& state_mf, int lev, Real time, Parameters Par
         fermi_Perturbation(i, j, k, tmp_fermi_fab, time);
     });
   }
+
     
   FillIntermediatePatch(lev, time, tmp_fermi_mf, 0, tmp_fermi_mf.nComp());
-    
+  
   Set_Dp(fermi_mf, tmp_fermi_mf, U_mf, lev, time, Param);
-    
+  
   Set_g3p(fermi_mf, fermi_mf, lev, time);
-    
-  //FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
-    
+ 
   MultiFab::Swap(state_mf, fermi_mf,  cIdx::Real_0, Idx::Phi_0_Real, 4, state_mf.nGrow());
-  MultiFab::Swap(U_mf, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, state_mf.nGrow());  
-
-   
-  //SetPhiFromChi(state_mf, 0,time, Param.mass, Param.r);
+  MultiFab::Swap(U_mf, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
   
 }
 
@@ -1472,7 +1466,7 @@ AmrCoreAdv::Trajectory(MultiFab& state_mf, MultiFab& aux_mf, int lev, const amre
         {
             MultiFab x_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
             
-            MultiFab::Swap(x_mf, aux_mf, auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, grid_aux[0].nGrow()); 
+            MultiFab::Swap(x_mf, aux_mf, auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, aux_mf.nGrow()); 
             
             MultiFab b_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
             
@@ -1480,19 +1474,12 @@ AmrCoreAdv::Trajectory(MultiFab& state_mf, MultiFab& aux_mf, int lev, const amre
             
             BiCG_Solve(x_mf, b_mf, state_mf, lev, time, geom, Param);
             
-            MultiFab::Swap(x_mf, aux_mf, auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, grid_aux[0].nGrow()); 
+            MultiFab::Swap(x_mf, aux_mf, auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, aux_mf.nGrow()); 
             
             MultiFab::Swap(b_mf, state_mf, Idx::Phi_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
             
             Set_g3DinvPhi(state_mf, aux_mf, geom, lev, time, Param.mass, Param.r);
-
-            //FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
-            //FlipSigns(lev, state_mf, Idx::Phi_0_Real, 4);
-            //FlipSigns(lev, state_mf, Idx::DDinvPhi_0_Real, 4);
-            //FlipSigns(lev, state_mf, Idx::chi_0_Real, 4);
-            //FlipSigns(lev, state_mf, Idx::g3DinvPhi_0_Real, 4);
    
-
         }
         update_momentum(state_mf, aux_mf, lev, time, geom, Param, dtau);
         
@@ -1503,7 +1490,7 @@ AmrCoreAdv::Trajectory(MultiFab& state_mf, MultiFab& aux_mf, int lev, const amre
     {
         MultiFab x_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
             
-        MultiFab::Swap(x_mf, aux_mf, auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, grid_aux[0].nGrow()); 
+        MultiFab::Swap(x_mf, aux_mf, auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, aux_mf.nGrow()); 
             
         MultiFab b_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
             
@@ -1511,19 +1498,12 @@ AmrCoreAdv::Trajectory(MultiFab& state_mf, MultiFab& aux_mf, int lev, const amre
             
         BiCG_Solve(x_mf, b_mf, state_mf, lev, time, geom, Param);
             
-        MultiFab::Swap(x_mf, aux_mf, auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, grid_aux[0].nGrow()); 
+        MultiFab::Swap(x_mf, aux_mf, auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, aux_mf.nGrow()); 
             
         MultiFab::Swap(b_mf, state_mf, Idx::Phi_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
             
         Set_g3DinvPhi(state_mf, aux_mf, geom, lev, time, Param.mass, Param.r);
-
-        //FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
-        //FlipSigns(lev, state_mf, Idx::Phi_0_Real, 4);
-        //FlipSigns(lev, state_mf, Idx::DDinvPhi_0_Real, 4);
-        //FlipSigns(lev, state_mf, Idx::chi_0_Real, 4);
-        //FlipSigns(lev, state_mf, Idx::g3DinvPhi_0_Real, 4);
    
-
     }
     update_momentum(state_mf, aux_mf, lev, time, geom, Param, dtau/2.0);
 }
@@ -1688,20 +1668,15 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& S_new, int lev,
     BL_PROFILE("BiCG_solve");
     amrex::Real alpha, beta, denom, rsq, rsq_new, bsqrt, bnorm;
     
-    
-    //S_new.MultiFab::setVal(0, Idx::DDinvPhi_0_Real, 4, 0);
+    const BoxArray& ba = x_mf.boxArray();
+    const DistributionMapping& dm = x_mf.DistributionMap();
     
     x_mf.MultiFab::setVal(0, cIdx::Real_0, 4, 0);
-    
-    const BoxArray& ba = S_new.boxArray();
-    const DistributionMapping& dm = S_new.DistributionMap();
     
     MultiFab* mfres = new MultiFab;
     mfres -> define(ba,dm,4,NUM_GHOST_CELLS);
     
     MultiFab::Copy(*mfres, b_mf, cIdx::Real_0, 0, 4, NUM_GHOST_CELLS);
-    
-    //FillIntermediatePatch(lev, time, S_new, 0, S_new.nComp());
     
     MultiFab* mfp = new MultiFab;
     mfp -> define(ba,dm,4,NUM_GHOST_CELLS);
@@ -1713,89 +1688,45 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& S_new, int lev,
     
     MultiFab::Copy(*mfp, *mfres, resIdx::res_0_Real, pIdx::p_0_Real, 4, NUM_GHOST_CELLS);
     
-    
     MultiFab* mfDp = new MultiFab;
     mfDp -> define(ba,dm,4,NUM_GHOST_CELLS);
-    //FillIntermediatePatch(lev, time, S_new, 0, S_new.nComp());
     
     MultiFab* mfDDp = new MultiFab;
     mfDDp -> define(ba,dm,4,NUM_GHOST_CELLS);
     
     rsq = MultiFab::Dot(*mfres, resIdx::res_0_Real, 4, 0);
     
-    //amrex::Print() << rsq << "\n";
-    
     for(int i = 0; i < Param.BiCG_Max_Iters; i++)
     {
         
-        /*
-        Set_g3Dp_new(*mfDp, *mfp, *mfU, Param);
-        FillIntermediatePatch(lev, time, *mfDp, 0, mfDp -> nComp());
-        
-        Set_g3Dp_new(*mfDDp, *mfDp, *mfU, Param);
-        FillIntermediatePatch(lev, time, *mfDDp, 0, mfDDp -> nComp());
-        */
-        
         Set_Dp(*mfDp, *mfp, *mfU, lev, time, Param);
-        
         Set_g3p(*mfDp, *mfDp, lev, time);
-        //FillIntermediatePatch(lev, time, *mfDp, 0, mfDp -> nComp());
         
         Set_Dp(*mfDDp, *mfDp, *mfU, lev, time, Param);
-        
         Set_g3p(*mfDDp, *mfDDp, lev, time);
-        //FillIntermediatePatch(lev, time, *mfDDp, 0, mfDDp -> nComp());
-        
-        //FlipSigns(lev, *mfDDp, DDpIdx::DDp_0_Real, 4);
-        
-        
-        //FillIntermediatePatch(lev, time, S_new, 0, S_new.nComp());
-        
-        //amrex::Print() << "Made it here \n";
         
         denom = MultiFab::Dot(*mfp, cIdx::Real_0, *mfDDp, cIdx::Real_0, 4, 0);
         
         alpha = rsq/denom;
         
-        //MultiFab::Saxpy(S_new, alpha, *mfp, cIdx::Real_0, Idx::DDinvPhi_0_Real, 4, 0); 
-        //FillIntermediatePatch(lev, time, S_new, 0, S_new.nComp());  
-        
-        MultiFab::Saxpy(x_mf, alpha, *mfp, cIdx::Real_0, cIdx::Real_0, 4, 0); 
+        MultiFab::Saxpy(x_mf, alpha, *mfp, cIdx::Real_0, cIdx::Real_0, 4, 0);
         FillIntermediatePatch(lev, time, x_mf, 0, x_mf.nComp());
-        
-        
-     
-        //FlipSigns(lev, S_new, Idx::Phi_0_Real, 4);
-        //FlipSigns(lev, S_new, Idx::DDinvPhi_0_Real, 4);
-        //FlipSigns(lev, S_new, Idx::chi_0_Real, 4);
-        //FlipSigns(lev, S_new, Idx::g3DinvPhi_0_Real, 4);
-        
-        //Set_DDinvPhi(S_new, *mfp, geom_lev, alpha);
-        
-        //FillIntermediatePatch(lev, time, S_new, 0, S_new.nComp());
         
         MultiFab::Saxpy(*mfres, -alpha, *mfDDp, cIdx::Real_0, cIdx::Real_0, 4, 0);
         
         FillIntermediatePatch(lev, time, *mfres, 0, mfres -> nComp());
-        //FlipSigns(lev, *mfres, resIdx::res_0_Real, 4);
-        
-        //FillIntermediatePatch(lev, time, S_new, 0, S_new.nComp());
-        
+
         rsq_new = MultiFab::Dot(*mfres, cIdx::Real_0, 4, 0);
         if (rsq_new < Param.BiCG_Thresh)
             break;
         
         beta = rsq_new/rsq;
         rsq = rsq_new;
-        //amrex::Print() << rsq << "\n";
         
         MultiFab::LinComb(*mfp, beta, *mfp, cIdx::Real_0, 1.0, *mfres, cIdx::Real_0, cIdx::Real_0, 4, 0);
         
        
         FillIntermediatePatch(lev, time, *mfp, 0, mfp -> nComp());
-        //FlipSigns(lev, *mfp, pIdx::p_0_Real, 4);
-        //if(i == 1) amrex::Print() << "Made it here " << MultiFab::Dot(*mfp, cIdx::Real_0, 4, 0) << std::endl;
-        
         
         if (i == (Param.BiCG_Max_Iters - 1) && rsq_new > Param.BiCG_Thresh)
         {
@@ -1815,15 +1746,7 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& S_new, int lev,
     delete mfDp;
     delete mfDDp;
     
-    //Set_g3DinvPhi(S_new, aux_mf, geom_lev, lev, time, Param.mass, Param.r);
-    //FillIntermediatePatch(lev, time, S_new, 0, S_new.nComp());
-    
-    //FillIntermediatePatch(lev, time, aux_mf, 0, aux_mf.nComp());
     FillIntermediatePatch(lev, time, x_mf, 0, x_mf.nComp());
-    //FlipSigns(lev, S_new, Idx::Phi_0_Real, 4);
-    //FlipSigns(lev, S_new, Idx::DDinvPhi_0_Real, 4);
-    //FlipSigns(lev, S_new, Idx::chi_0_Real, 4);
-    //FlipSigns(lev, S_new, Idx::g3DinvPhi_0_Real, 4);
     
 }
 
