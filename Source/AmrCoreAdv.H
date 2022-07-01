@@ -91,7 +91,8 @@ public:
     // overrides the pure virtual function in AmrCore
     virtual void ErrorEst (int lev, amrex::TagBoxArray& tags, amrex::Real time, int ngrow) override;
     
-    void Fermi_BiCG_Solve(MultiFab& S_new, MultiFab& aux_mf, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
+
+    void BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& S_new, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
 
 private:
 
