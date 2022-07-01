@@ -1,5 +1,5 @@
 # Stopping Criteria
-max_step = 10200
+max_step = 2200
 num_therm_steps = 100
 starting_measurements_step = 200
 stop_time = 2000000.0
