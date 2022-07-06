@@ -34,7 +34,7 @@ AmrCoreAdv::AmrCoreAdv ()
     grid_hold.resize(nlevs_max);
     grid_aux.resize(nlevs_max);
     
-    integrator.resize(nlevs_max);
+    //integrator.resize(nlevs_max);
 
     bcs.resize(Idx::NumScalars);
 
@@ -81,7 +81,7 @@ AmrCoreAdv::Evolve ()
     int last_diag_file_step = 0;
     srand (static_cast <unsigned> (time(0)));
     
-    /* Find a better place for this declaration*/
+
     
     
     Parameters Param{.beta = coupling_beta, 
@@ -103,7 +103,7 @@ AmrCoreAdv::Evolve ()
                      .APE_smear_alpha = APE_alpha,
                      .measWilsonLoops_Interval = measWL_Interval,
                      .checkrevtraj_Interval = Check_revTraj_Int};
-    /*/////////////////////////////////////////////////////////////*/
+
 
     int num_accepted = 0;
     
@@ -130,6 +130,8 @@ AmrCoreAdv::Evolve ()
         int iteration = 1;
         
         cur_time += dt[0];
+        
+        
         for (int level = 0; level <= finest_level; ++level)
         {
             const auto geom_lev = geom[level];
@@ -328,7 +330,7 @@ AmrCoreAdv::MakeNewLevelFromCoarse (int lev, Real time, const BoxArray& ba,
     FillCoarsePatch(lev, time, grid_new[lev], 0, ncomp);
 
     // also create the time integrator for this level
-    integrator[lev] = std::make_unique<TimeIntegrator<MultiFab> >(grid_old[lev]);
+    //integrator[lev] = std::make_unique<TimeIntegrator<MultiFab> >(grid_old[lev]);
 }
 
 // Remake an existing level using provided BoxArray and DistributionMapping and
@@ -353,7 +355,7 @@ AmrCoreAdv::RemakeLevel (int lev, Real time, const BoxArray& ba,
     t_old[lev] = time - 1.e200;
 
     // also recreate the time integrator for this level
-    integrator[lev] = std::make_unique<TimeIntegrator<MultiFab> >(grid_old[lev]);
+    //integrator[lev] = std::make_unique<TimeIntegrator<MultiFab> >(grid_old[lev]);
 }
 
 void
@@ -431,7 +433,7 @@ void AmrCoreAdv::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& ba
     }
 
     // also create the time integrator for this level
-    integrator[lev] = std::make_unique<TimeIntegrator<MultiFab> >(grid_old[lev]);
+    //integrator[lev] = std::make_unique<TimeIntegrator<MultiFab> >(grid_old[lev]);
 }
 
 // tag all cells for refinement
@@ -692,7 +694,7 @@ AmrCoreAdv::FillIntermediatePatch (int lev, Real time, MultiFab& mf, int icomp, 
 
         // fill mf_coarse_temp using MC Equation 39 at "time"
         Real timestep_fraction = (time - t_old[lev-1])/dt[lev-1];
-        integrator[lev-1]->time_interpolate(grid_new[lev-1], grid_old[lev-1], timestep_fraction, mf_coarse_temp);
+        //integrator[lev-1]->time_interpolate(grid_new[lev-1], grid_old[lev-1], timestep_fraction, mf_coarse_temp);
 
         // we'll want to interpolate from mf_coarse_temp at "time"
         cmf.push_back(&mf_coarse_temp);
@@ -1218,7 +1220,7 @@ AmrCoreAdv::ReadCheckpointFile ()
         grid_new[lev].define(grids[lev], dmap[lev], ncomp, nghost);
 
         // also create the time integrator for this level
-        integrator[lev] = std::make_unique<TimeIntegrator<MultiFab> >(grid_old[lev]);
+        //integrator[lev] = std::make_unique<TimeIntegrator<MultiFab> >(grid_old[lev]);
     }
 
     // read in the MultiFab data
@@ -1406,14 +1408,15 @@ void AmrCoreAdv::Perturb (MultiFab& state_mf, int lev, Real time, Parameters Par
         state_Perturbation(i, j, k, state_fab, time);
     });
   }
-
-    MultiFab tmp_fermi_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
-    MultiFab::Swap(tmp_fermi_mf, state_mf, Idx::Phi_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
+  FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());  //Not sure if this one is necessary...
+  
+  MultiFab tmp_fermi_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
+  MultiFab::Swap(tmp_fermi_mf, state_mf, Idx::Phi_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
+   
+  MultiFab U_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
+  MultiFab::Swap(U_mf, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
     
-    MultiFab U_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
-    MultiFab::Swap(U_mf, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
-    
-    MultiFab fermi_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
+  MultiFab fermi_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
 
 #ifdef _OPENMP
 #pragma omp parallel
@@ -1686,7 +1689,7 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& S_new, int lev,
     
     MultiFab::Swap(*mfU, S_new, Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
     
-    MultiFab::Copy(*mfp, *mfres, resIdx::res_0_Real, pIdx::p_0_Real, 4, NUM_GHOST_CELLS);
+    MultiFab::Copy(*mfp, *mfres, cIdx::Real_0, cIdx::Real_0, 4, NUM_GHOST_CELLS);
     
     MultiFab* mfDp = new MultiFab;
     mfDp -> define(ba,dm,4,NUM_GHOST_CELLS);
@@ -1694,7 +1697,7 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& S_new, int lev,
     MultiFab* mfDDp = new MultiFab;
     mfDDp -> define(ba,dm,4,NUM_GHOST_CELLS);
     
-    rsq = MultiFab::Dot(*mfres, resIdx::res_0_Real, 4, 0);
+    rsq = MultiFab::Dot(*mfres, cIdx::Real_0, 4, 0);
     
     for(int i = 0; i < Param.BiCG_Max_Iters; i++)
     {
