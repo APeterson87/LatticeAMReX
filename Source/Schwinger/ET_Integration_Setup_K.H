@@ -38,30 +38,6 @@ namespace cIdx {
                         NumIndexes};
 };
 
-namespace pIdx { 
-         enum pIndexes {p_0_Real, 
-                        p_0_Imaginary, 
-                        p_1_Real, 
-                        p_1_Imaginary, 
-                        p_NumScalars}; 
-};
-
-namespace DDpIdx { 
-         enum DDpIndexes {DDp_0_Real, 
-                        DDp_0_Imaginary, 
-                        DDp_1_Real, 
-                        DDp_1_Imaginary, 
-                        DDp_NumScalars}; 
-};
-
-namespace resIdx { 
-         enum resIndexes {res_0_Real, 
-                          res_0_Imaginary, 
-                          res_1_Real, 
-                          res_1_Imaginary, 
-                          res_NumScalars}; 
-};
-
 namespace InitIdx { 
          enum ETInitIndexes {NumScalars}; 
 };
