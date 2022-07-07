@@ -4,10 +4,10 @@ num_therm_steps = 100
 starting_measurements_step = 200
 stop_time = 2000000.0
 
-num_hmc_substeps = 10
+num_hmc_substeps = 8
 hmc_tau = 1.0
  
-coupling_beta = 4.0
+coupling_beta = 1.0
 mass_0 = 0.1
 wilson_r = 1.0
 Temp_T = 1.0
@@ -43,7 +43,7 @@ amr.blocking_factor = 8
 amr.regrid_int = 1
 
 # AMR Interpolation 
-amr.interpolation_type = 6
+amr.interpolation_type = 2
 
 # Problem specific boundary conditions 
 domain_lo_bc_types = 1 1
