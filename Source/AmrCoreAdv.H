@@ -107,6 +107,8 @@ private:
 
     // more flexible version of AverageDown() that lets you average down across multiple levels
     void AverageDownTo (int crse_lev);
+    
+    void FlipSigns(int lev, MultiFab& mf, int icomp, int ncomp);
 
     // compute a new multifab by coping in phi from valid region and filling ghost cells
     // works for single level and 2-level cases (fill fine grid ghost by interpolating from coarse)
@@ -216,6 +218,7 @@ private:
     amrex::Real Action_Momentum(amrex::MultiFab& state_mf);
     amrex::Real Action_Fermi(amrex::MultiFab& state_mf, amrex::MultiFab& aux_mf);
     amrex::Real Action_Fermi_From_Chi (MultiFab& state_mf);
+
 
     /* End of My Functions*/
     
