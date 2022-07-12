@@ -92,7 +92,7 @@ public:
     virtual void ErrorEst (int lev, amrex::TagBoxArray& tags, amrex::Real time, int ngrow) override;
     
 
-    void BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& S_new, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
+    void BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& S_new, bool useInitGuess,  int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
 
 private:
 
@@ -214,10 +214,17 @@ private:
     
     void Set_Dp (MultiFab& Dp_mf, MultiFab& p_mf, MultiFab& U_mf, int lev, Real time, Parameters Param);
     
-    amrex::Real Action_Gauge(amrex::MultiFab& state_mf, amrex::Real beta);
-    amrex::Real Action_Momentum(amrex::MultiFab& state_mf);
-    amrex::Real Action_Fermi(amrex::MultiFab& state_mf, amrex::MultiFab& aux_mf);
-    amrex::Real Action_Fermi_From_Chi (MultiFab& state_mf);
+    void smear_gauge (MultiFab& smearedU_mf, MultiFab& U_mf, int lev, const amrex::Real time, Parameters Param);
+    
+    amrex::Real Total_Action(MultiFab& state_mf, MultiFab& aux_mf, int lev, Parameters Param);
+    amrex::Real Action_Gauge(amrex::MultiFab& state_mf, int lev, amrex::Real beta);
+    amrex::Real Action_Momentum(amrex::MultiFab& state_mf, int lev);
+    amrex::Real Action_Fermi(amrex::MultiFab& state_mf, amrex::MultiFab& aux_mf, int lev);
+    //amrex::Real Action_Fermi_From_Chi (MultiFab& state_mf);
+    
+    Real Test_Sum (MultiFab& state_mf, int lev);
+    
+    Real meas_TopCharge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
 
 
     /* End of My Functions*/
@@ -242,6 +249,7 @@ private:
     amrex::Vector<amrex::MultiFab> grid_old;
     amrex::Vector<amrex::MultiFab> grid_hold;
     amrex::Vector<amrex::MultiFab> grid_aux;
+    amrex::Vector<std::unique_ptr<amrex::iMultiFab>> grid_msk;
 
     // array of time integrator objects at each level of refinement
     amrex::Vector<std::unique_ptr<TimeIntegrator<MultiFab> > > integrator;
