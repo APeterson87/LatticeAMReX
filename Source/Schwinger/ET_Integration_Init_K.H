@@ -34,4 +34,31 @@ state_init(int i, int j, int k,
         
         
 }
+
+AMREX_GPU_DEVICE 
+inline 
+void 
+aux_init(int i, int j, int k, 
+        amrex::Array4<amrex::Real> const& aux_fab, 
+        amrex::Real time, const amrex::GeometryData& geom) noexcept 
+{
+        const auto domain_xlo = geom.ProbLo(); 
+        
+        amrex::Real x0 = (i + 0.5)*geom.CellSize(0) + domain_xlo[0]; 
+        amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1]; 
+        
+        aux_fab(i, j, k, auxIdx::DDinvPhi_0_Real) = 0; 
+        aux_fab(i, j, k, auxIdx::DDinvPhi_0_Imaginary) = 0;
+        aux_fab(i, j, k, auxIdx::DDinvPhi_1_Real) = 0;
+        aux_fab(i, j, k, auxIdx::DDinvPhi_1_Imaginary) = 0;
+        
+        aux_fab(i, j, k, auxIdx::g3DinvPhi_0_Real) = 0; 
+        aux_fab(i, j, k, auxIdx::g3DinvPhi_0_Imaginary) = 0;
+        aux_fab(i, j, k, auxIdx::g3DinvPhi_1_Real) = 0;
+        aux_fab(i, j, k, auxIdx::g3DinvPhi_1_Imaginary) = 0;
+
+
+        
+        
+}
 #endif

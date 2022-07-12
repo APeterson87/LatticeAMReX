@@ -68,8 +68,6 @@ state_smear_gauge(int i, int j, int k,
         amrex::Array4<amrex::Real> const& smeared_fab,
         amrex::Array4<amrex::Real> const& smeared_tmp_fab,
         const amrex::Real time,
-        amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dx,
-        const amrex::GeometryData& geom,
         amrex::Real alpha) noexcept 
 {
 
@@ -135,9 +133,7 @@ void
 state_project_smeared(int i, int j, int k, 
         amrex::Array4<amrex::Real> const& smeared_fab,
         amrex::Array4<amrex::Real> const& smeared_tmp_fab,
-        const amrex::Real time,
-        amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dx,
-        const amrex::GeometryData& geom) noexcept 
+        const amrex::Real time) noexcept 
 {
         amrex::Real SmU_tmp_0_00_Real = smeared_tmp_fab(i, j, k, cIdx::Real_0);
         amrex::Real SmU_tmp_0_00_Imaginary = smeared_tmp_fab(i, j, k, cIdx::Imaginary_0);
