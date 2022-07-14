@@ -83,6 +83,7 @@ AmrCoreAdv::Evolve ()
     srand (static_cast <unsigned> (time(0)));
     
 
+    Observables Obs;
     
     
     Parameters Param{.beta = coupling_beta, 
@@ -104,7 +105,9 @@ AmrCoreAdv::Evolve ()
                      .APE_smear_alpha = APE_alpha,
                      .measWilsonLoops_Interval = measWL_Interval,
                      .checkrevtraj_Interval = Check_revTraj_Int};
-
+    
+    //Obs.TopologicalCharge.resize(max_step-start_meas_step);
+    std::ofstream TopCharge("TopologicalCharges.dat");
 
     int num_accepted = 0;
     
@@ -175,7 +178,7 @@ AmrCoreAdv::Evolve ()
         
         amrex::Print() << "*************** NEW STATE DATA ***************" << std::endl;
         Real HTotal = Total_Action(grid_new[lev], grid_aux[lev], lev, Param);
-        amrex::Print() << "**********************************************" << std::endl << std::endl;
+        amrex::Print() << "**********************************************" << std::endl;
         
         Real r_loc = std::rand()/(static_cast <float> (RAND_MAX));
         
@@ -183,7 +186,6 @@ AmrCoreAdv::Evolve ()
         amrex::Print() << "MCMC random number = " << r_loc << std::endl;
         amrex::Print() << "Exp(-deltaH/T) = " << std::exp(-(HTotal-HTotalcurrent)) << std::endl;
         amrex::Print() << "deltaH = " << HTotal - HTotalcurrent << std::endl;
-        
         
         if(r_loc > std::exp(-(HTotal-HTotalcurrent)/Temp_T) && istep[0] >= Param.therm_steps)
         {
@@ -194,19 +196,33 @@ AmrCoreAdv::Evolve ()
         }
         else
         {
-            if(step > Param.starting_meas_step) 
+            if(step >= Param.starting_meas_step) 
                 num_accepted++;
             amrex::Print() << "NEW STATE ACCEPTED " << std::endl;
         }
         
         amrex::Print() << "**********************************************" << std::endl << std::endl;
-        
-        amrex::Print() << "**************** Measurements ****************" << std::endl;
-        
-        
-        Real InstantonNumber = meas_TopCharge(grid_new[lev], lev, cur_time, geom[lev], Param);
-        amrex::Print() << "Topological Charge = " << (int)std::round(InstantonNumber) << std::endl;
-        amrex::Print() << "**********************************************" << std::endl << std::endl;
+        if(step >= Param.starting_meas_step)
+        {
+            amrex::Print() << "**************** MEASUREMENTS ****************" << std::endl;
+            
+            const BoxArray& ba_lev = grid_new[lev].boxArray();
+            
+            const DistributionMapping& dm_lev = grid_new[lev].DistributionMap();
+            
+            MultiFab U_mf(ba_lev, dm_lev, 4, grid_new[lev].nGrow());
+            MultiFab::Swap(U_mf, grid_new[lev], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[lev].nGrow());
+            
+            Real InstantonNumber = meas_TopCharge(U_mf, lev, cur_time, geom[lev], Param);
+            TopCharge << (int)std::round(InstantonNumber) << std::endl; 
+            
+            MultiFab::Swap(U_mf, grid_new[lev], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[lev].nGrow());
+            
+            amrex::Print() << "Topological Charge = " << (int)std::round(InstantonNumber) << std::endl;
+            
+            amrex::Print() << "Current acceptance rate " << static_cast<float>(num_accepted)/static_cast<float>(step+1-start_meas_step) << std::endl;
+            amrex::Print() << "**********************************************" << std::endl << std::endl;
+        }
         
 
         amrex::Print() << "Coarse STEP " << step+1 << " ends." << " TIME = " << cur_time
@@ -244,9 +260,12 @@ AmrCoreAdv::Evolve ()
         if (cur_time >= stop_time - 1.e-6*dt[0]) break;
     }
     
-    amrex::Print() << "\nFinal Acceptance Rate = " << static_cast<float>(num_accepted)/static_cast<float>(max_step-start_meas_step) << std::endl;
+    amrex::Print() << "Total Accepted = " << num_accepted << std::endl;
+    amrex::Print() << "Final Acceptance Rate = " << static_cast<float>(num_accepted)/static_cast<float>(max_step-start_meas_step) << std::endl;
     
+
     
+    TopCharge.close();
 
     if (plot_int > 0 && istep[0] > last_plot_file_step) {
         WritePlotFile();
@@ -2111,6 +2130,9 @@ void AmrCoreAdv::smear_gauge (MultiFab& smearedU_mf, MultiFab& U_mf, int lev, co
 
 Real AmrCoreAdv::meas_TopCharge (MultiFab& U_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param)
 {
+    
+    auto& nodal_mask = grid_msk[lev];
+    
     const BoxArray& ba = U_mf.boxArray();
     BoxArray nba = ba;
     nba.surroundingNodes();
@@ -2136,12 +2158,13 @@ Real AmrCoreAdv::meas_TopCharge (MultiFab& U_mf, int lev, const amrex::Real time
     Dim3 hi = ubound(bx);
 
     const auto& smeared_fab = smearedU_mf -> array(mfi);
+    const auto& mask_arr = nodal_mask->array(mfi);
 
     // For each grid, loop over all the valid points
     reduce_operations.eval(bx, reduce_data,
     [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
     {
-        return {(i != hi.x)*(j != hi.y)*state_TopCharge(i,j,k,smeared_fab)};
+        return {mask_arr(i, j, k)*state_TopCharge(i,j,k,smeared_fab)};
     });
   }
     ReduceTuple reduced_values = reduce_data.value();
