@@ -36,10 +36,10 @@ amr.v = 1
 
 # Refinement Parameters 
 amr.max_level = 0
-amr.max_grid_size = 16
+amr.max_grid_size = 8
 amr.ref_ratio = 2
 amr.n_error_buf = 1
-amr.blocking_factor = 16
+amr.blocking_factor = 8
 amr.regrid_int = 1
 
 # AMR Interpolation 
