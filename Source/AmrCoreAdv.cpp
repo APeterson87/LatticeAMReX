@@ -106,7 +106,34 @@ AmrCoreAdv::Evolve ()
                      .measWilsonLoops_Interval = measWL_Interval,
                      .checkrevtraj_Interval = Check_revTraj_Int};
     
-    //Obs.TopologicalCharge.resize(max_step-start_meas_step);
+    amrex::Print() << std::endl << "***************** PARAMETERS *****************" << std::endl;
+
+    amrex::Print() << "\nbeta = " << Param.beta << std::endl;
+    amrex::Print() << "Dirac Mass = " << Param.mass << std::endl;
+    amrex::Print() << "Wilson Factor = " << Param.r << std::endl;
+    amrex::Print() << "Temperature = " << Param.Temp << std::endl;
+    
+    amrex::Print() << "\nLattice Number x = " << Param.Nx << std::endl;
+    amrex::Print() << "Lattice Number y = " << Param.Ny << std::endl;
+    
+    amrex::Print() << "\nHMC substeps = " << Param.hmc_substeps << std::endl;
+    amrex::Print() << "HMC tau = " << Param.tau << std::endl;
+    amrex::Print() << "HMC dtau = " << Param.tau/Param.hmc_substeps << std::endl;
+    amrex::Print() << "Thermalization steps = " << Param.therm_steps << std::endl;
+    amrex::Print() << "Starting measurements at step " << Param.starting_meas_step << std::endl; 
+    
+    if(Param.use_dynamical_fermions)
+        amrex::Print() << "\nUsing dynamical fermions" << std::endl;
+    
+    amrex::Print() << "\nBiconjugate tolerance  = " << Param.BiCG_Thresh << std::endl;
+    amrex::Print() << "Max Biconjugate steps = " << Param.BiCG_Max_Iters << std::endl;
+    
+    amrex::Print() << std:: endl << "**********************************************" << std::endl << std::endl;
+    
+    
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+    
+    
     std::ofstream TopCharge("TopologicalCharges.dat");
 
     int num_accepted = 0;

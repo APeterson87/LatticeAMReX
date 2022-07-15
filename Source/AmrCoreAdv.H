@@ -4,6 +4,8 @@
 #include <string>
 #include <limits>
 #include <memory>
+#include <complex>
+#include<thread>
 
 #ifdef _OPENMP
 #include <omp.h>
