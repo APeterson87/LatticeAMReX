@@ -1626,7 +1626,7 @@ void AmrCoreAdv::update_gauge (MultiFab& state_mf, int lev, const amrex::Real ti
     });
   }
     
-  state_mf.OverrideSync(geom.periodicity());
+  state_mf.OverrideSync(*nodal_mask, geom.periodicity());
   FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
   FlipSigns(lev, state_mf, Idx::Phi_0_Real, 4);
   
@@ -1664,7 +1664,7 @@ void AmrCoreAdv::update_momentum (MultiFab& state_mf, MultiFab& aux_mf, int lev,
     });
   }
     
-  state_mf.OverrideSync(geom.periodicity());
+  state_mf.OverrideSync(*nodal_mask, geom.periodicity());
   FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
   FlipSigns(lev, state_mf, Idx::Phi_0_Real, 4);
     

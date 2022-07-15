@@ -5,7 +5,7 @@
 #include <limits>
 #include <memory>
 #include <complex>
-#include<thread>
+#include <thread>
 
 #ifdef _OPENMP
 #include <omp.h>
