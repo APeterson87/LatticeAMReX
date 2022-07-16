@@ -130,11 +130,11 @@ AmrCoreAdv::Evolve ()
     
     amrex::Print() << std:: endl << "**********************************************" << std::endl << std::endl;
     
-    
     std::this_thread::sleep_for(std::chrono::seconds(3));
     
     
     std::ofstream TopCharge("TopologicalCharges.dat");
+    std::ofstream Sigma("Sigma.dat");
 
     int num_accepted = 0;
     
@@ -243,10 +243,24 @@ AmrCoreAdv::Evolve ()
             Real InstantonNumber = meas_TopCharge(U_mf, lev, cur_time, geom[lev], Param);
             TopCharge << (int)std::round(InstantonNumber) << std::endl; 
             
-            MultiFab::Swap(U_mf, grid_new[lev], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[lev].nGrow());
+            
             
             amrex::Print() << "Topological Charge = " << (int)std::round(InstantonNumber) << std::endl;
             
+            if (step%measWL_Interval == 0)
+            {
+                amrex::Print() << "Measuring Wilson Loops" << std::endl;
+            
+                std::vector<double> sigma(Param.Nx/2-1, 0.0);
+                meas_WilsonLoops(U_mf, lev, cur_time, geom[lev], Param, sigma);
+                for(int i = 0; i < sigma.size(); i++)
+                {
+                    Sigma << sigma[i] << " ";
+                }
+                amrex::Print() << std::endl;
+            }
+            
+            MultiFab::Swap(U_mf, grid_new[lev], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[lev].nGrow());
             amrex::Print() << "Current acceptance rate " << static_cast<float>(num_accepted)/static_cast<float>(step+1-start_meas_step) << std::endl;
             amrex::Print() << "**********************************************" << std::endl << std::endl;
         }
@@ -293,6 +307,7 @@ AmrCoreAdv::Evolve ()
 
     
     TopCharge.close();
+    Sigma.close();
 
     if (plot_int > 0 && istep[0] > last_plot_file_step) {
         WritePlotFile();
@@ -2202,4 +2217,192 @@ Real AmrCoreAdv::meas_TopCharge (MultiFab& U_mf, int lev, const amrex::Real time
     delete smearedU_mf;
     
     return TopCharge/(2.0*M_PI);
+}
+
+void AmrCoreAdv::meas_WilsonLoops(MultiFab& U_mf, int lev, amrex::Real time, const Geometry& geom, Parameters Param, std::vector<double>& sigma_out)
+{
+    BL_PROFILE("AmrCoreAdv::meas_WilsonLoops"); //Compile with TINY_PROFILE = TRUE
+    
+    const BoxArray& ba = U_mf.boxArray();
+    BoxArray nba = ba;
+    nba.surroundingNodes();
+    
+    amrex::Print() << "Gauge Box " << nba << std::endl;
+    const DistributionMapping& dm = U_mf.DistributionMap();
+    
+    MultiFab smearedU_mf;
+    smearedU_mf.define(nba, dm, 4, NUM_GHOST_CELLS);
+    
+    smear_gauge(smearedU_mf, U_mf, lev, time, Param);
+     
+    const Box& domain_bx = geom.Domain();
+    const BoxArray domain_ba(&domain_bx, 1);
+    
+    BoxArray domain_nba = domain_ba;
+    domain_nba.surroundingNodes();
+    
+    amrex::Print() << "Domain Box " << domain_nba << std::endl;
+    DistributionMapping domain_dm{domain_nba};
+    
+    MultiFab domain_mf(domain_nba, domain_dm, 4, NUM_GHOST_CELLS);
+    
+
+    
+
+    
+    //IntVect piv(1,1); //Set ghost cells by periodicity
+    
+    domain_mf.ParallelCopy(smearedU_mf, cIdx::Real_0, cIdx::Real_0, 4, NUM_GHOST_CELLS, NUM_GHOST_CELLS, geom.periodicity());
+
+    //MultiFab::Copy(domain_mf, *smearedU_mf, cIdx::Real_0, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+    //domain_mf.ParallelCopy(U_mf, cIdx::Real_0, cIdx::Real_0, 4, geom.periodicity());
+    //Real plaq_ave = Measure_Smeared_Plaq(domain_mf, lev, time, geom, Param);
+    
+    int Nx = numcells[0];
+    int Ny = numcells[1];
+    
+    std::vector<std::vector<std::complex<double>>> wLoops(Nx/2, std::vector<std::complex<double>> (Ny/2, 0.0));  
+    std::vector<double> sigma(Nx/2-1, 0.0);
+    
+    Real plaq_ave_alias = Measure_Plaq(smearedU_mf, lev);
+    //Real plaq_ave_alias = Measure_Smeared_Plaq(domain_mf, lev, time, geom, Param);
+    //amrex::Print() << plaq_ave;
+        
+    sigma[0] = -std::log(std::abs(plaq_ave_alias));
+    
+    int p1, p2;
+
+    double inv_Lsq = 1.0/(Nx*Ny);
+    
+    int loop_max = Nx/2;
+    
+    for ( MFIter mfi(domain_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
+    {
+        const auto& domain_fab = domain_mf.array(mfi);
+
+        #ifdef _OMP
+        #pragma omp parallel for collapse(2)
+        int num_threads;
+        std::sscanf(std::getenv("OMP_NUM_THREADS"), "%d", &num_threads);
+        omp_set_num_threads(4);
+        #endif
+        
+        
+        for(int Xrect=1; Xrect < loop_max; Xrect++) 
+        {
+      
+        //Loop over all Y side sizes of rectangle
+            for(int Yrect=1; Yrect< loop_max; Yrect++) 
+            {
+              //Loop over all x,y starting points
+              for(int x=0; x<Nx; x++)
+              {
+                for(int y=0; y<Ny; y++)
+                {
+                    std::complex<double> w = std::complex<double>(1.0,0.0);
+                    std::complex<double> dw_tmp;
+                    
+                    for(int dx = 0; dx < Xrect; dx++) 
+                    {
+                        w *= std::complex<double>(domain_fab((x+dx)%Nx,y,0,cIdx::Real_0),
+                                                  domain_fab((x+dx)%Nx,y,0,cIdx::Imaginary_0));
+                    }
+                    
+                    p1 = (x + Xrect)%Nx;
+                    
+                    for(int dy = 0; dy < Yrect; dy++) 
+                    {
+                        w *= std::complex<double>(domain_fab(p1,(y+dy)%Ny,0,cIdx::Real_1), 
+                                                  domain_fab(p1,(y+dy)%Ny,0,cIdx::Imaginary_1));
+                    }
+                    
+                    p2 = (y + Yrect)%Ny;
+                    
+                    for(int dx = Xrect - 1; dx >= 0; dx--)
+                    {
+                        dw_tmp = std::complex<double>(domain_fab((x+dx)%Nx,p2,0,cIdx::Real_0),
+                                                      domain_fab((x+dx)%Nx,p2,0,cIdx::Imaginary_0));
+                        dw_tmp = std::conj(dw_tmp);
+                        w *= dw_tmp;
+                    }
+                    
+                    for(int dy = Yrect - 1; dy >= 0; dy--)
+                    {
+                        dw_tmp = std::complex<double>(domain_fab(x,(y+dy)%Ny,0,cIdx::Real_1),
+                                                      domain_fab(x,(y+dy)%Ny,0,cIdx::Imaginary_1));
+                        dw_tmp = std::conj(dw_tmp);
+                        w *= dw_tmp;
+                    }
+                    
+                    wLoops[Xrect][Yrect] += w*inv_Lsq; 
+                    
+                }
+              }
+                
+            }
+
+        }
+        
+        #ifdef _OMP
+        omp_set_num_threads(num_threads);
+        #endif        
+        
+
+
+#ifdef _OMP
+#pragma omp parallel for
+#endif
+
+        amrex::Print() << sigma[0] << ", ";
+        for(int size = 2; size<loop_max; size++) 
+        {
+            sigma[size-1]  = -std::log(std::abs((std::real(wLoops[size][size])/std::real(wLoops[size-1][size]))*(std::real(wLoops[size-1][size-1])/std::real(wLoops[size][size-1]))));
+    
+            sigma[size-1] += -std::log(std::abs((std::real(wLoops[size][size])/std::real(wLoops[size][size-1]))*(std::real(wLoops[size-1][size-1])/std::real(wLoops[size-1][size]))));
+    
+            sigma[size-1] *= 0.5;
+            amrex::Print() << sigma[size - 1] << ", ";
+        }
+    
+        amrex::Print() << "Sigma size: " << sigma.size() << std::endl;
+        sigma_out = sigma;
+        
+    }
+    
+    //delete smearedU_mf;
+}
+
+Real AmrCoreAdv::Measure_Plaq (MultiFab& U_mf, int lev)
+{
+    auto& nodal_mask = grid_msk[lev];
+    
+    ReduceOps<ReduceOpSum> reduce_operations;
+    ReduceData<Real> reduce_data(reduce_operations);
+    using ReduceTuple = typename decltype(reduce_data)::Type;
+
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+
+  for ( MFIter mfi(U_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
+  {
+    const Box& bx = mfi.nodaltilebox();
+    const auto ncomp = U_mf.nComp();
+
+    const auto& U_fab = U_mf.array(mfi); 
+    const auto& mask_arr = nodal_mask -> array(mfi);
+
+    // For each grid, loop over all the valid points
+    reduce_operations.eval(bx, reduce_data,
+    [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
+    {
+        return {mask_arr(i, j, k)*sum_plaq(i,j,k,U_fab)/(numcells[0]*numcells[1])};
+    });
+  }
+    ReduceTuple reduced_values = reduce_data.value();
+    // MPI reduction
+    ParallelDescriptor::ReduceRealSum(amrex::get<0>(reduced_values));
+    Real action = amrex::get<0>(reduced_values);
+    
+    return action;
 }

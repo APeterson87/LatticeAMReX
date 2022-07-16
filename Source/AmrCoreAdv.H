@@ -227,6 +227,8 @@ private:
     Real Test_Sum (MultiFab& state_mf, int lev);
     
     Real meas_TopCharge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
+    void meas_WilsonLoops(MultiFab& U_mf, int lev, amrex::Real time, const Geometry& geom, Parameters Param, std::vector<double>& sigma_out);
+    Real Measure_Plaq (MultiFab& U_mf, int lev);
 
 
     /* End of My Functions*/
