@@ -5,6 +5,7 @@ starting_measurements_step = 200
 stop_time = 2000000.0
 
 num_hmc_substeps = 10
+
 hmc_tau = 1.0
  
 coupling_beta = 4.0
