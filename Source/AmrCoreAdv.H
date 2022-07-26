@@ -94,7 +94,7 @@ public:
     virtual void ErrorEst (int lev, amrex::TagBoxArray& tags, amrex::Real time, int ngrow) override;
     
 
-    void BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& S_new, bool useInitGuess,  int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
+    void BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useInitGuess, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
 
 private:
 
@@ -227,8 +227,10 @@ private:
     Real Test_Sum (MultiFab& state_mf, int lev);
     
     Real meas_TopCharge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
-    void meas_WilsonLoops(MultiFab& U_mf, int lev, amrex::Real time, const Geometry& geom, Parameters Param, std::vector<double>& sigma_out);
+    void meas_WilsonLoops(MultiFab& U_mf, int lev, amrex::Real time, const Geometry& geom, Parameters Param, amrex::Vector<double> &sigma, std::ofstream& Sigma);
     Real Measure_Plaq (MultiFab& U_mf, int lev);
+    
+    void PionCorrelation (MultiFab& U_mf, int lev, const Real time_lev, const amrex::Geometry& geom, Parameters Param, amrex::Vector<double>& picorr, std::ofstream& PiCorr);
 
 
     /* End of My Functions*/
