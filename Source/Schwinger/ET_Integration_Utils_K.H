@@ -61,6 +61,9 @@ struct Parameters {
 };
 
 
+// DMH: Use this as a template for Wilson Flow.
+//      This is a cheap, gauge only physicial measurement
+
 AMREX_GPU_DEVICE 
 inline 
 void 
