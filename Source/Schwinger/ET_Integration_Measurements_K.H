@@ -21,11 +21,11 @@ sum_plaq(const int i, const int j, const int k,
         amrex::Real U2_r = U_fab(i+1, j, k, cIdx::Real_1);
         amrex::Real U2_i = U_fab(i+1, j, k, cIdx::Imaginary_1);
         
-        amrex::Real U3_r = U_fab(i, j+1, k, cIdx::Real_1);
+        amrex::Real U3_r = U_fab(i, j+1, k, cIdx::Real_0);
         amrex::Real U3_i = -U_fab(i, j+1, k, cIdx::Imaginary_0);
         
-        amrex::Real U4_r = U_fab(i, j, k, Idx::U_1_Real);
-        amrex::Real U4_i = -U_fab(i, j, k, Idx::U_1_Imaginary);
+        amrex::Real U4_r = U_fab(i, j, k, cIdx::Real_1);
+        amrex::Real U4_i = -U_fab(i, j, k, cIdx::Imaginary_1);
         
         amrex::Real plaq_re = U1_i*U2_i*U3_i*U4_i - U1_i*U2_i*U3_r*U4_r - U1_i*U2_r*U3_i*U4_r - U1_i*U2_r*U3_r*U4_i - U1_r*U2_i*U3_i*U4_r - U1_r*U2_i*U3_r*U4_i - U1_r*U2_r*U3_i*U4_i + U1_r*U2_r*U3_r*U4_r;
         
