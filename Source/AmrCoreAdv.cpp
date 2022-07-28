@@ -136,6 +136,11 @@ AmrCoreAdv::Evolve ()
     std::ofstream TopCharge("TopologicalCharges.dat");
     std::ofstream Sigma("Sigma.dat");
     std::ofstream PiCorr("PionCorr.dat");
+    
+    amrex::Vector<double> pion_corr_total(Param.Ny/2+1, 0.0);
+    amrex::Vector<double> sigma_total(Param.Nx/2-1, 0.0);
+    
+    int WLcount = 0;
 
     int num_accepted = 0;
     
@@ -252,21 +257,26 @@ AmrCoreAdv::Evolve ()
             
             if (step%measWL_Interval == 0)
             {
+                WLcount++;
                 amrex::Print() << "Measuring Wilson Loops" << std::endl;
             
                 amrex::Vector<double> sigma(Param.Nx/2-1, 0.0);
                 meas_WilsonLoops(U_mf, lev, cur_time, geom[lev], Param, sigma, Sigma);
-                //for(amrex::Real e: sigma) Sigma << e << ' ';
-                //Sigma << std::endl;
+                
+                std::transform(sigma_total.begin(), sigma_total.end(), sigma.begin(), sigma_total.begin(), std::plus<Real>());
+                for (Real e: sigma_total) amrex::Print() << std::fixed << std::setprecision(9) << e/WLcount << ' ';
+
                 amrex::Print() << std::endl;
                 
                 amrex::Print() << "Measuring Pion Correlation" << std::endl;
             
                 amrex::Vector<double> pi_corr(Param.Ny/2+1, 0.0);
                 PionCorrelation(U_mf, lev, cur_time, geom[lev], Param, pi_corr, PiCorr);
-                //for(double e: pi_corr) PiCorr << e << ' ';
-                //PiCorr << std::endl;
-                amrex::Print() << std::endl;
+                
+                std::transform(pion_corr_total.begin(), pion_corr_total.end(), pi_corr.begin(), pion_corr_total.begin(), std::plus<Real>());
+                for (Real e: pion_corr_total) amrex::Print() << std::fixed << std::setprecision(9) << e/WLcount << ' ';
+                
+                amrex::Print() << std::endl << std::endl;
             }
             
             MultiFab::Swap(U_mf, grid_new[lev], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[lev].nGrow());
@@ -2250,7 +2260,7 @@ void AmrCoreAdv::meas_WilsonLoops(MultiFab& U_mf, int lev, amrex::Real time, con
     amrex::Vector<std::vector<std::complex<double>>> wLoops(Nx/2, std::vector<std::complex<double>> (Ny/2, 0.0));  
     //amrex::Vector<double> sigma(Nx/2-1, 0.0);
     
-    Real plaq_ave_alias = Measure_Plaq(smearedU_mf, lev);
+    Real plaq_ave_alias = Measure_Plaq(U_mf, lev);
     //Real plaq_ave_alias = Measure_Smeared_Plaq(domain_mf, lev, time, geom, Param);
     //amrex::Print() << plaq_ave;
         
@@ -2399,16 +2409,20 @@ Real AmrCoreAdv::Measure_Plaq (MultiFab& U_mf, int lev)
 
 void AmrCoreAdv::PionCorrelation (MultiFab& U_mf, int lev, const Real time_lev, const amrex::Geometry& geom, Parameters Param, amrex::Vector<double>& picorr, std::ofstream& PiCorr)
 {
+    
+    auto& nodal_mask = grid_msk[lev];
+    
     const BoxArray& ba = U_mf.boxArray();
     BoxArray nba = ba;
     nba.surroundingNodes();
     const DistributionMapping& dm = U_mf.DistributionMap();
     
+    /*
     MultiFab smearedU_mf;
     smearedU_mf.define(nba, dm, 4, NUM_GHOST_CELLS);
     
     smear_gauge(smearedU_mf, U_mf, lev, time_lev, Param);
-    
+    */
     MultiFab propUp_mf(nba, dm, 4, NUM_GHOST_CELLS);
     
     MultiFab propDn_mf(nba, dm, 4, NUM_GHOST_CELLS);
@@ -2429,7 +2443,7 @@ void AmrCoreAdv::PionCorrelation (MultiFab& U_mf, int lev, const Real time_lev, 
         const auto ncomp = U_mf.nComp();
 
         const auto& source_fab = source_mf.array(mfi); 
-        
+        const auto& mask_arr = nodal_mask -> array(mfi);
         
         //source_fab(0, 0, 0, cIdx::Real_0) = 1;
         //source_fab(0, 0, 1, cIdx::Real_0) = 1;
@@ -2437,7 +2451,7 @@ void AmrCoreAdv::PionCorrelation (MultiFab& U_mf, int lev, const Real time_lev, 
         amrex::ParallelFor(bx,
         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            if(i == 0 && j == 0)
+            if(i == 0 && j == 0 && mask_arr(i, j, k))
               source_fab(i, j, k, cIdx::Real_0) = 1;
         });
         
@@ -2450,7 +2464,8 @@ void AmrCoreAdv::PionCorrelation (MultiFab& U_mf, int lev, const Real time_lev, 
     
 
     
-    BiCG_Solve(propUp_mf, source_mf, smearedU_mf, 0, lev, time_lev, geom, Param);
+    //BiCG_Solve(propUp_mf, source_mf, smearedU_mf, 0, lev, time_lev, geom, Param);
+    BiCG_Solve(propUp_mf, source_mf, U_mf, 0, lev, time_lev, geom, Param);
     
 
     
@@ -2464,6 +2479,7 @@ void AmrCoreAdv::PionCorrelation (MultiFab& U_mf, int lev, const Real time_lev, 
         const auto ncomp = U_mf.nComp();
 
         const auto& source_fab = source_mf.array(mfi); 
+        const auto& mask_arr = nodal_mask -> array(mfi);
         
         //source_fab(0, 0, 0, cIdx::Real_1) = 1;
         //source_fab(0, 0, 1, cIdx::Real_1) = 1;
@@ -2471,7 +2487,7 @@ void AmrCoreAdv::PionCorrelation (MultiFab& U_mf, int lev, const Real time_lev, 
         amrex::ParallelFor(bx,
         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            if(i == 0 && j == 0)
+            if(i == 0 && j == 0 && mask_arr(i, j, k))
               source_fab(i, j, k, cIdx::Real_1) = 1;
             
         });
@@ -2483,7 +2499,8 @@ void AmrCoreAdv::PionCorrelation (MultiFab& U_mf, int lev, const Real time_lev, 
     Set_Dp(Dsource_mf, source_tmp_mf, U_mf, lev, time_lev, Param);
     Set_g3p(source_mf, Dsource_mf, lev, time_lev);
     
-    BiCG_Solve(propDn_mf, source_mf, smearedU_mf, 0, lev, time_lev, geom, Param);
+    //BiCG_Solve(propDn_mf, source_mf, smearedU_mf, 0, lev, time_lev, geom, Param);
+    BiCG_Solve(propDn_mf, source_mf, U_mf, 0, lev, time_lev, geom, Param);
     
     
     
@@ -2514,11 +2531,11 @@ void AmrCoreAdv::PionCorrelation (MultiFab& U_mf, int lev, const Real time_lev, 
         const auto& propUp_domain_fab = propUp_domain_mf.array(mfi);
         const auto& propDn_domain_fab = propDn_domain_mf.array(mfi);
         
-        for(int y = 0; y <= Ny; y++) 
+        for(int y = 0; y < Ny; y++) 
         {
             corr = 0.0;
         
-            for(int x = 0; x <= Nx; x++)
+            for(int x = 0; x < Nx; x++)
             {
                 tmp = propUp_domain_fab(x, y, 0, cIdx::Real_0)*propUp_domain_fab(x, y, 0, cIdx::Real_0) +
                       propUp_domain_fab(x, y, 0, cIdx::Imaginary_0)*propUp_domain_fab(x, y, 0, cIdx::Imaginary_0) +
