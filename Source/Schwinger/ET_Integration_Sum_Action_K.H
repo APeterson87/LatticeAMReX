@@ -28,9 +28,6 @@ sum_action_gauge(const int i, const int j, const int k,
         amrex::Real plaq_re = U1_i*U2_i*U3_i*U4_i - U1_i*U2_i*U3_r*U4_r - U1_i*U2_r*U3_i*U4_r - U1_i*U2_r*U3_r*U4_i - U1_r*U2_i*U3_i*U4_r - U1_r*U2_i*U3_r*U4_i - U1_r*U2_r*U3_i*U4_i + U1_r*U2_r*U3_r*U4_r;
         
         amrex::Real H_Gauge = beta*(1-plaq_re);
-        
-        amrex::Real P_0 = state_fab(i, j, k, Idx::P_0);
-        amrex::Real P_1 = state_fab(i, j, k, Idx::P_1);
 
         amrex::Real delta_action = H_Gauge;
             
