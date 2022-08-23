@@ -221,10 +221,10 @@ AmrCoreAdv::Evolve ()
         
         amrex::Print() << std::endl << "****************** DO MCMC *******************" << std::endl;
         amrex::Print() << "MCMC random number = " << r_loc << std::endl;
-        amrex::Print() << "Exp(-deltaH/T) = " << std::exp(-(HTotal-HTotalcurrent)) << std::endl;
+        amrex::Print() << "Exp(-deltaH/T) = " << std::exp(-(HTotal-HTotalcurrent)/Temp_T) << std::endl;
         amrex::Print() << "deltaH = " << HTotal - HTotalcurrent << std::endl;
         
-        if(r_loc > std::exp(-(HTotal-HTotalcurrent)/Temp_T) && istep[0] >= Param.therm_steps)
+        if(r_loc > std::exp(-(HTotal-HTotalcurrent)/Temp_T) && step >= Param.therm_steps)
         {
             for (int level = 0; level <= finest_level; ++level) {
                 ResetLevel(level, cur_time, grid_hold);
@@ -704,7 +704,7 @@ AmrCoreAdv::FlipSigns(int lev, MultiFab& mf, int icomp, int ncomp)
         {
             for(int n = icomp; n <= icomp+ncomp - 1; n++)
             {
-                fab(i, j, k, n) *= -1;
+                fab(i, j, k, n) *= 1;
             }
         }
     });
