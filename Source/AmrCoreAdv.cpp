@@ -350,7 +350,7 @@ AmrCoreAdv::InitData ()
         // start simulation from the beginning
         const Real time = 0.0;
         InitFromScratch(time);
-        AverageDown();
+        //AverageDown();
 
         if (chk_int > 0) {
             WriteCheckpointFile();
@@ -653,6 +653,7 @@ AmrCoreAdv::ReadParameters ()
     }
 }
 
+/*
 // set covered coarse cells to be the average of overlying fine cells
 void
 AmrCoreAdv::AverageDown ()
@@ -673,7 +674,7 @@ AmrCoreAdv::AverageDownTo (int crse_lev)
                         geom[crse_lev+1], geom[crse_lev],
                         0, grid_new[crse_lev].nComp(), refRatio(crse_lev));
 }
-
+*/
 void 
 AmrCoreAdv::FlipSigns(int lev, MultiFab& mf, int icomp, int ncomp)
 {
@@ -986,7 +987,7 @@ AmrCoreAdv::timeStep (int lev, Real time, int iteration, Parameters Param)
             timeStep(lev+1, time+(i-1)*dt[lev+1], i, Param);
         }
 
-        AverageDownTo(lev); // average lev+1 down to lev
+        //AverageDownTo(lev); // average lev+1 down to lev
     }
 }
 
