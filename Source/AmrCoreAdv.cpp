@@ -178,7 +178,7 @@ AmrCoreAdv::Evolve ()
             if(Param.use_dynamical_fermions)
             {
                 
-                MultiFab x_mf(ba, dm, 4, grid_new[level].nGrow());
+                MultiFab x_mf(ba, dm, 4, grid_aux[level].nGrow());
                 MultiFab::Swap(x_mf, grid_aux[level], auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, grid_aux[level].nGrow()); 
             
                 MultiFab b_mf(ba, dm, 4, grid_new[level].nGrow());
@@ -189,7 +189,7 @@ AmrCoreAdv::Evolve ()
 
                 BiCG_Solve(x_mf, b_mf, U_mf, false, level, cur_time, geom_lev, Param);
                 
-                MultiFab::Swap(x_mf, grid_aux[level], auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, grid_aux[0].nGrow()); 
+                MultiFab::Swap(x_mf, grid_aux[level], auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, grid_aux[level].nGrow()); 
                 MultiFab::Swap(b_mf, grid_new[level], Idx::Phi_0_Real, cIdx::Real_0, 4, grid_aux[level].nGrow());
                 MultiFab::Swap(U_mf, grid_new[level], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[level].nGrow());
 
@@ -704,7 +704,7 @@ AmrCoreAdv::FlipSigns(int lev, MultiFab& mf, int icomp, int ncomp)
         {
             for(int n = icomp; n <= icomp+ncomp - 1; n++)
             {
-                fab(i, j, k, n) *= 1;
+                fab(i, j, k, n) *= -1;
             }
         }
     });
