@@ -38,3 +38,4 @@ Instructions for running simulations using AMReX.
 11. You can make adjustments to the algorithms and field manipulations in the LatticeAMReX/Source directories.  E.g., for the Ising model, the spin field s(i, j) is initialized in the Source/Ising/ET_Integration_Init_K.H, and MCMC is performed in Source/ET_Integration_Post_Update_K.H.  Calculations of diagnostic quantities like energy density are calculated in Source/ET_Integration_Diag_K.H.
     
    If you wish to add new quantites to plot from the spin field s(i, j) you will need to update the enum DiagnosticIndexes in ET_Integration_Setup_K.H, and add the new field name in ET_Integration_Diagnostic_Variables_K.H.
+   

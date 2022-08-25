@@ -5,7 +5,37 @@
 #include <AMReX_Array4.H> 
 
 namespace Idx { 
-         enum ETIndexes {U_0_Re, U_0_Im, U_1_Re, U_1_Im, NumScalars}; 
+         enum ETIndexes {U_0_Real, 
+                         U_0_Imaginary, 
+                         U_1_Real, 
+                         U_1_Imaginary, 
+                         P_0, 
+                         P_1,
+                         Phi_0_Real, 
+                         Phi_0_Imaginary, 
+                         Phi_1_Real, 
+                         Phi_1_Imaginary,
+                         NumScalars}; 
+};
+
+namespace auxIdx { 
+         enum auxIndexes {DDinvPhi_0_Real, 
+                         DDinvPhi_0_Imaginary, 
+                         DDinvPhi_1_Real, 
+                         DDinvPhi_1_Imaginary, 
+                         g3DinvPhi_0_Real, 
+                         g3DinvPhi_0_Imaginary, 
+                         g3DinvPhi_1_Real, 
+                         g3DinvPhi_1_Imaginary,
+                         NumScalars}; 
+};
+
+namespace cIdx {
+         enum cIndexes {Real_0,
+                        Imaginary_0,
+                        Real_1,
+                        Imaginary_1,
+                        NumIndexes};
 };
 
 namespace InitIdx { 
