@@ -1,5 +1,5 @@
 # Stopping Criteria
-max_step = 10201
+max_step = 1201
 num_therm_steps = 100
 starting_measurements_step = 200
 stop_time = 2000000.0
@@ -26,7 +26,7 @@ measWilsonLoops_Interval = 100
 CheckReversedTrajectoryInterval = 1000
 
 # Problem Size & Geometry 
-amr.n_cell = 32 32
+amr.n_cell = 64 64
 
 geometry.is_periodic = 1 1 
 geometry.coord_sys = 0 
@@ -36,13 +36,13 @@ geometry.prob_hi = 16.0 16.0 #20.9805 20.9805 20.9805
 # Turn on verbosity in amr 
 amr.v = 1
 
-# Refinement Parameters 
-amr.max_level = 0
-amr.max_grid_size = 16
+# Refinement Parameter0s 
+amr.max_level = 1
+amr.max_grid_size = 8
 amr.ref_ratio = 2
 amr.n_error_buf = 1
 amr.blocking_factor = 8
-amr.regrid_int = 1
+amr.regrid_int = 100
 
 # AMR Interpolation 
 amr.interpolation_type = 6
@@ -61,7 +61,7 @@ problem.cfl = 1.0
 problem.epsilon = 0.01
 
 # Plotting steps 
-amr.plot_int = -1
+amr.plot_int = 100
 amr.diag_int = -1
 amr.chk_int = -1
 

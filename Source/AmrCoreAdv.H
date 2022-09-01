@@ -110,6 +110,10 @@ private:
     // more flexible version of AverageDown() that lets you average down across multiple levels
     void AverageDownTo (int crse_lev);
     
+    void AverageDownNodal();
+    
+    void AverageDownToNodal(int crse_lev);
+    
     void FlipSigns(int lev, MultiFab& mf, int icomp, int ncomp);
 
     // compute a new multifab by coping in phi from valid region and filling ghost cells
@@ -193,9 +197,9 @@ private:
     
     void Perturb (amrex::MultiFab& state, int lev, amrex::Real time, Parameters Param);
     
-    void Trajectory(MultiFab& state_mf, MultiFab& aux_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
+    void Trajectory(MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
     
-    void update_momentum (MultiFab& state_mf, MultiFab& aux_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
+    void update_momentum (MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
     
     void update_gauge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param, amrex::Real dtau);
     
@@ -218,7 +222,7 @@ private:
     
     void smear_gauge (MultiFab& smearedU_mf, MultiFab& U_mf, int lev, const amrex::Real time, Parameters Param);
     
-    amrex::Real Total_Action(MultiFab& state_mf, MultiFab& aux_mf, int lev, Parameters Param);
+    amrex::Real Total_Action(MultiFab& state_mf, int lev, Parameters Param);
     amrex::Real Action_Gauge(amrex::MultiFab& state_mf, int lev, amrex::Real beta);
     amrex::Real Action_Momentum(amrex::MultiFab& state_mf, int lev);
     amrex::Real Action_Fermi(amrex::MultiFab& state_mf, amrex::MultiFab& aux_mf, int lev);
@@ -254,7 +258,6 @@ private:
     amrex::Vector<amrex::MultiFab> grid_new;
     amrex::Vector<amrex::MultiFab> grid_old;
     amrex::Vector<amrex::MultiFab> grid_hold;
-    amrex::Vector<amrex::MultiFab> grid_aux;
     amrex::Vector<std::unique_ptr<amrex::iMultiFab>> grid_msk;
 
     // array of time integrator objects at each level of refinement
