@@ -20,7 +20,7 @@ state_update_momentum(int i, int j, int k,
         bool is_fermi_dynamical,
         amrex::Real dtau) noexcept 
 {
-
+         
         amrex::Real U_0_00_r = state_fab(i, j, k, Idx::U_0_Real);
         amrex::Real U_0_00_i = state_fab(i, j, k, Idx::U_0_Imaginary);
         
@@ -69,7 +69,7 @@ state_update_momentum(int i, int j, int k,
         state_fab(i, j, k, Idx::P_0) += -(F_0-fD_0)*dtau;
         
         state_fab(i, j, k, Idx::P_1) += -(F_1-fD_1)*dtau;
-
+        
 
 }
 
@@ -98,5 +98,31 @@ state_update_gauge(int i, int j, int k,
         
         state_fab(i, j, k, Idx::U_1_Real) = std::cos(dtau*P_1)*U_1_Real - std::sin(dtau*P_1)*U_1_Imaginary;
         state_fab(i, j, k, Idx::U_1_Imaginary) = std::sin(dtau*P_1)*U_1_Real + std::cos(dtau*P_1)*U_1_Imaginary;
+        
 }
+
+AMREX_GPU_DEVICE 
+inline 
+void 
+state_normalize_gauge(int i, int j, int k, 
+        amrex::Array4<amrex::Real> const& state_fab) noexcept 
+{
+        amrex::Real U_0_Real = state_fab(i, j, k, Idx::U_0_Real);
+        amrex::Real U_0_Imaginary = state_fab(i, j, k, Idx::U_0_Imaginary);
+        
+        amrex::Real U_1_Real = state_fab(i, j, k, Idx::U_1_Real);
+        amrex::Real U_1_Imaginary = state_fab(i, j, k, Idx::U_1_Imaginary);
+        
+        amrex::Real P_0 = state_fab(i, j, k, Idx::P_0);
+        amrex::Real P_1 = state_fab(i, j, k, Idx::P_1);
+        
+        
+        state_fab(i, j, k, Idx::U_0_Real) = U_0_Real*std::pow(U_0_Real*U_0_Real + U_0_Imaginary*U_0_Imaginary, -0.5);
+        state_fab(i, j, k, Idx::U_0_Imaginary) = U_0_Imaginary*std::pow(U_0_Real*U_0_Real + U_0_Imaginary*U_0_Imaginary, -0.5);
+        
+        state_fab(i, j, k, Idx::U_1_Real) = U_1_Real*std::pow(U_1_Real*U_1_Real + U_1_Imaginary*U_1_Imaginary, -0.5);
+        state_fab(i, j, k, Idx::U_1_Imaginary) = U_1_Imaginary*std::pow(U_1_Real*U_1_Real + U_1_Imaginary*U_1_Imaginary, -0.5);
+}
+
+
 #endif

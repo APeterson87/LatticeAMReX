@@ -10,11 +10,12 @@ inline
 void 
 state_Perturbation(int i, int j, int k, 
         amrex::Array4<amrex::Real> const& state_fab,
+        const amrex::Real sigma_lev,
         const amrex::Real time) noexcept 
 {
         
-        amrex::Real P_0 = amrex::RandomNormal(0,1);
-        amrex::Real P_1 = amrex::RandomNormal(0,1);
+        amrex::Real P_0 = amrex::RandomNormal(0,sigma_lev);
+        amrex::Real P_1 = amrex::RandomNormal(0,sigma_lev);
         
         state_fab(i, j, k, Idx::P_0) = P_0;
         state_fab(i, j, k, Idx::P_1) = P_1;        

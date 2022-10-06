@@ -114,6 +114,13 @@ private:
     
     void AverageDownToNodal(int crse_lev);
     
+    template <typename FAB>
+    void adam_down_nodal (const FabArray<FAB>& S_fine,
+                             FabArray<FAB>& S_crse,
+                             const IntVect& ratio,
+                             int ngcrse = 0,
+                             bool mfiter_is_definitely_safe=false);
+    
     void FlipSigns(int lev, MultiFab& mf, int icomp, int ncomp);
 
     // compute a new multifab by coping in phi from valid region and filling ghost cells
@@ -138,10 +145,11 @@ private:
 
     // advance a level by dt
     // includes a recursive call for finer levels
-    void timeStep (int lev, amrex::Real time, int iteration, Parameters Param);
+    void timeStepRegrid (int lev, amrex::Real time, int iteration, Parameters Param);
+    void timeStepAdvance (int lev, amrex::Real time, Parameters Param);
 
     // advance a single level for a single time step
-    void Advance (int lev, amrex::Real time, amrex::Real dt_lev, int iteration, int ncycle, Parameters Param);
+    void Advance (int lev, amrex::Real time, amrex::Real dt_lev, int ncycle, Parameters Param);
 
     // a wrapper for EstTimeStep(0
     void ComputeDt ();
@@ -196,13 +204,15 @@ private:
     /* My Functions */    
     
     void Perturb (amrex::MultiFab& state, int lev, amrex::Real time, Parameters Param);
+    void StatePerturb (amrex::Vector<amrex::MultiFab>& state, Real time, Parameters Param);
     
     void Trajectory(MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
+    void StateTrajectory(amrex::Vector<amrex::MultiFab>& state, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param);
     
     void update_momentum (MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
     
     void update_gauge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param, amrex::Real dtau);
-    
+    void set_gauge_from_theta (MultiFab& state_mf, int lev);
     void ResetDDinvPhi(amrex::MultiFab& state_mf);
 
     void Set_DDinvPhi(MultiFab& state_mf, MultiFab& p_mf, const Geometry& geom, amrex::Real alpha);
@@ -229,6 +239,11 @@ private:
     //amrex::Real Action_Fermi_From_Chi (MultiFab& state_mf);
     
     Real Test_Sum (MultiFab& state_mf, int lev);
+    Real Test_Sum_Lev (amrex::Vector<amrex::MultiFab>& state, int lev, Parameters Param);
+    
+    Real Total_Action_Lev (amrex::Vector<amrex::MultiFab>& state, Parameters Param, int high_lev);
+    Real Action_Gauge_Lev (amrex::Vector<amrex::MultiFab>& state, int lev, Parameters Param);
+    Real Action_Momentum_Lev (amrex::Vector<amrex::MultiFab>& state, int lev);
     
     Real meas_TopCharge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
     void meas_WilsonLoops(MultiFab& U_mf, int lev, amrex::Real time, const Geometry& geom, Parameters Param, amrex::Vector<double> &sigma, std::ofstream& Sigma);
@@ -301,6 +316,9 @@ private:
     int Check_revTraj_Int = 5;
     
     Vector<int> numcells;
+    
+    Vector<Real> coupling_beta_vec;
+    Vector<Real> mom_sigma_vec;
 
     // if >= 0 we restart from a checkpoint
     std::string restart_chkfile = "";

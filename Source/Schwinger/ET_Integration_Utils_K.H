@@ -35,6 +35,9 @@ struct Parameters {
             Real mass = 0.1;
             Real r = 1.0;
             Real Temp = 1.0;
+            
+            std::vector<Real> beta_lev;
+            std::vector<Real> sigma_lev;
     
     //Problem Parameters
             int Nx = 8;
@@ -151,5 +154,37 @@ state_project_smeared(int i, int j, int k,
         smeared_fab(i, j, k, cIdx::Real_1) = std::real(std::polar(1.0,std::arg(SmU_tmp_1_00)));
         smeared_fab(i, j, k, cIdx::Imaginary_1) = std::imag(std::polar(1.0,std::arg(SmU_tmp_1_00)));
 
+}
+
+template <typename T>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+void adam_avgdown_nodes (Box const& bx, Array4<T> const& crse,
+                          Array4<T const> const& fine,
+                          int ccomp, int fcomp, int ncomp,
+                          IntVect const& ratio) noexcept
+{
+    const auto clo = lbound(bx);
+    const auto chi = ubound(bx);
+    const int facx = ratio[0];
+    const int facy = ratio[1];
+
+    for (int n = 0; n < ncomp; ++n) {
+        for     (int j = clo.y; j <= chi.y; ++j) {
+            int jj = j*facy;
+            AMREX_PRAGMA_SIMD
+            for (int i = clo.x; i <= chi.x; ++i) {
+                //crse(i,j,0,n+ccomp) = fine(i*facx+2,jj,0,n+fcomp);
+                if(n < 4)
+                {
+                    crse(i,j,0,0+ccomp) = fine(i*facx,jj,0,0+fcomp)*fine(i*facx+1,jj,0,0+fcomp) - fine(i*facx,jj,0,1+fcomp)*fine(i*facx+1,jj,0,1+fcomp);
+                    crse(i,j,0,1+ccomp) = fine(i*facx,jj,0,0+fcomp)*fine(i*facx+1,jj,0,1+fcomp) + fine(i*facx,jj,0,1+fcomp)*fine(i*facx+1,jj,0,0+fcomp);
+                    crse(i,j,0,2+ccomp) = fine(i*facx,jj,0,2+fcomp)*fine(i*facx,jj+1,0,2+fcomp) - fine(i*facx,jj,0,3+fcomp)*fine(i*facx,jj+1,0,3+fcomp);
+                    crse(i,j,0,3+ccomp) = fine(i*facx,jj,0,2+fcomp)*fine(i*facx+1,jj+1,0,3+fcomp) + fine(i*facx,jj,0,3+fcomp)*fine(i*facx,jj+1,0,2+fcomp);
+                }
+                else
+                    crse(i,j,0,n+ccomp) = fine(i*facx,jj,0,n+fcomp);
+            }
+        }
+    }
 }
 #endif

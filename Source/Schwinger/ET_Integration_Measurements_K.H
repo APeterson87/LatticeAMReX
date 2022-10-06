@@ -44,8 +44,22 @@ state_TopCharge(const int i, const int j, const int k,
         std::complex<double> Sm_0_0p = std::complex<double>(smeared_fab(i, j+1, k, cIdx::Real_0), smeared_fab(i, j+1, k, cIdx::Imaginary_0));
         std::complex<double> Sm_1_00 = std::complex<double>(smeared_fab(i, j, k, cIdx::Real_1), smeared_fab(i, j, k, cIdx::Imaginary_1));
     
-        std::complex<double> w = Sm_0_00*Sm_1_p0*std::conj(Sm_0_0p)*std::conj(Sm_1_00);
-        amrex::Real topC = std::arg(w);
+        //amrex::Real w = std::arg(Sm_0_00)+std::arg(Sm_1_p0)+std::arg(std::conj(Sm_0_0p))+std::arg(std::conj(Sm_1_00));
+        amrex::Real w = std::arg(Sm_0_00*Sm_1_p0*std::conj(Sm_0_0p)*std::conj(Sm_1_00));
+        amrex::Real topC = w;
+        /*
+        if(i == 16 && j == 16)
+        {
+            amrex::Print() << "Top C " <<  w << std::endl;
+            amrex::Print() << "Top C " <<  std::arg(Sm_0_00) << std::endl;
+            amrex::Print() << "Top C " <<  std::arg(Sm_1_p0) << std::endl;
+            amrex::Print() << "Top C " <<  std::arg(Sm_0_0p) << std::endl;
+            amrex::Print() << "Top C " <<  std::arg(Sm_1_00) << std::endl;
+        }
+    
+        if(topC != 0)
+            amrex::Print() << i << ' ' << j << ' ' << topC/(2*M_PI) <<  std::endl;
+        */
     
         return topC;
 }

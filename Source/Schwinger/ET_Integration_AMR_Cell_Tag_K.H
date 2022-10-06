@@ -8,7 +8,7 @@
 AMREX_GPU_DEVICE 
 inline 
 bool
-state_is_tagged(int i, int j, int k, 
+state_is_tagged(int i, int j, int k,
         int lev,
         amrex::Array4<amrex::Real const> const& state_fab,
         amrex::Real error_threshold,
@@ -22,7 +22,7 @@ state_is_tagged(int i, int j, int k,
         amrex::Real x0 = (i + 0.5)*geom.CellSize(0) + domain_xlo[0]; 
         amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1]; 
         amrex::Real x2 = (k + 0.5)*geom.CellSize(2) + domain_xlo[2]; 
-        
-        return  (i == 32) && (j == 32);
+            
+        return  (time > 5.0); // && (((i == 8) && (j == 8)) || ((i == 24) && (j == 24))); //(time < 10.0) || ((time > 20.0) && (i == 32) && (j == 16));
 }
 #endif

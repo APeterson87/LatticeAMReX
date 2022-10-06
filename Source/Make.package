@@ -5,3 +5,5 @@ CEXE_headers += bc_fill.H
 CEXE_sources += bc_fill.cpp
 CEXE_headers += ET_Integration.H
 CEXE_sources += ET_Integration.cpp
+CEXE_headers += Adam_Interpolater.H
+CEXE_sources += Adam_Interpolater.cpp
