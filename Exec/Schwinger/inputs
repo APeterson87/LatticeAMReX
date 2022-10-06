@@ -1,32 +1,33 @@
 # Stopping Criteria
-max_step = 1201
+max_step = 10
 num_therm_steps = 100
 starting_measurements_step = 200
 stop_time = 2000000.0
 
 num_hmc_substeps = 10
-
 hmc_tau = 1.0
  
 coupling_beta = 2.0
 mass_0 = 0.1
 wilson_r = 1.0
 Temp_T = 1.0
+coupling_beta_vec = 2.0 2.0
+sigma_lev = 1.0 1.0
 
-Use_Dynamical_Fermions = 1
+Use_Dynamical_Fermions = 0
 
 BiCGThresh = 1e-16
 BiCG_Max_Iter = 10000
 Use_BiCG_Stab = 0
 
 APE_iter = 1
-APE_alpha = 0.5 
+APE_alpha = 0.5
 
 measWilsonLoops_Interval = 100
 CheckReversedTrajectoryInterval = 1000
 
 # Problem Size & Geometry 
-amr.n_cell = 64 64
+amr.n_cell = 32 32
 
 geometry.is_periodic = 1 1 
 geometry.coord_sys = 0 
@@ -38,14 +39,14 @@ amr.v = 1
 
 # Refinement Parameter0s 
 amr.max_level = 1
-amr.max_grid_size = 8
+amr.max_grid_size = 32
 amr.ref_ratio = 2
 amr.n_error_buf = 1
-amr.blocking_factor = 8
-amr.regrid_int = 100
+amr.blocking_factor = 32
+amr.regrid_int = 1
 
 # AMR Interpolation 
-amr.interpolation_type = 6
+amr.interpolation_type = 1
 
 # Problem specific boundary conditions 
 domain_lo_bc_types = 1 1
@@ -61,12 +62,12 @@ problem.cfl = 1.0
 problem.epsilon = 0.01
 
 # Plotting steps 
-amr.plot_int = 100
+amr.plot_int = 1
 amr.diag_int = -1
 amr.chk_int = -1
 
 # Restart from checkpoint or use as initial condition? 
-#amr.restart = chk0002000
+#amr.restart = chk0001000
 #amr.restart_is_initial_data = 0
 
 ## integration.type can take on the following values: 
