@@ -187,4 +187,32 @@ void adam_avgdown_nodes (Box const& bx, Array4<T> const& crse,
         }
     }
 }
+/*
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+void adam_avgdown (Box const& bx, Array4<Real> const& crse,
+                    Array4<Real const> const& fine,
+                    int ccomp, int fcomp, int ncomp,
+                    IntVect const& ratio) noexcept
+{
+    const auto clo = lbound(bx);
+    const auto chi = ubound(bx);
+    const int facx = ratio[0];
+    const int facy = ratio[1];
+    //const Real volfrac = static_cast<Real>(1.0)/static_cast<Real>(facx*facy);
+
+    for (int n = 0; n < ncomp; ++n) {
+        for (int j = clo.y; j <= chi.y; ++j) {
+        for (int i = clo.x; i <= chi.x; ++i) {
+            int ii = i*facx;
+            int jj = j*facy;
+            Real c = 0.;
+            for (int jref = 0; jref < facy; ++jref) {
+            for (int iref = 0; iref < facx; ++iref) {
+                c += fine(ii+iref,jj+jref,0,n+fcomp);
+            }}
+            crse(i,j,0,n+ccomp) = volfrac * c;
+        }}
+    }
+}
+*/
 #endif
