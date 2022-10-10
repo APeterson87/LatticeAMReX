@@ -1,20 +1,20 @@
 # Stopping Criteria
 max_step = 10
-num_therm_steps = 100
-starting_measurements_step = 200
+num_therm_steps = 1000
+starting_measurements_step = 1100
 stop_time = 2000000.0
 
-num_hmc_substeps = 10
+num_hmc_substeps = 1
 hmc_tau = 1.0
  
-coupling_beta = 2.0
+coupling_beta = 1.0
 mass_0 = 0.1
 wilson_r = 1.0
 Temp_T = 1.0
-coupling_beta_vec = 2.0 2.0
+coupling_beta_vec = 1.0 4.0
 sigma_lev = 1.0 1.0
 
-Use_Dynamical_Fermions = 0
+Use_Dynamical_Fermions =0
 
 BiCGThresh = 1e-16
 BiCG_Max_Iter = 10000
@@ -42,7 +42,7 @@ amr.max_level = 1
 amr.max_grid_size = 32
 amr.ref_ratio = 2
 amr.n_error_buf = 1
-amr.blocking_factor = 32
+amr.blocking_factor = 8
 amr.regrid_int = 1
 
 # AMR Interpolation 
