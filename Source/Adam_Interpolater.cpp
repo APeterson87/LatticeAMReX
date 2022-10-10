@@ -26,8 +26,8 @@ adaminterp_interp (Box const& bx,
             AMREX_PRAGMA_SIMD
             for (int i = lo.x; i <= hi.x; ++i) {
                 const int ic = amrex::coarsen(i,ratio[0]);
-                //fine(i,j,0,n+fcomp) = crse(ic,jc,0,n+ccomp);
-                if(n < 4)
+                fine(i,j,0,n+fcomp) = 0;//crse(ic,jc,0,n+ccomp);
+                /*if(n < 4)
                 {
                     if(i%2+j%2 == 0)
                         fine(i,j,0,n+fcomp) = crse(ic,jc,0,n+ccomp);
@@ -42,7 +42,7 @@ adaminterp_interp (Box const& bx,
                 
                 }
                 else
-                    fine(i,j,0,n+fcomp) = crse(ic,jc,0,n+ccomp);
+                    fine(i,j,0,n+fcomp) = crse(ic,jc,0,n+ccomp);*/
                     
             }
         }
