@@ -211,6 +211,8 @@ private:
     
     void update_momentum (MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
     
+    void show_momentum (MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
+    
     void update_gauge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param, amrex::Real dtau);
     void set_gauge_from_theta (MultiFab& state_mf, int lev);
     void ResetDDinvPhi(amrex::MultiFab& state_mf);

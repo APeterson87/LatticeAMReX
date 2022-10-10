@@ -9,7 +9,7 @@ AMREX_GPU_DEVICE
 inline 
 void 
 state_init(int i, int j, int k, 
-        amrex::Array4<amrex::Real> const& state_fab, 
+        amrex::Array4<amrex::Real> const& state_fab,
         amrex::Real time, int lev, const amrex::GeometryData& geom) noexcept 
 {
         const auto domain_xlo = geom.ProbLo(); 
@@ -18,8 +18,8 @@ state_init(int i, int j, int k,
         amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1]; 
 
         
-        amrex::Real theta_0 = M_PI/4*(amrex::Random()-0.5);
-        amrex::Real theta_1 = M_PI/4*(amrex::Random()-0.5);
+        amrex::Real theta_0 = 0; //M_PI/4*(amrex::Random()-0.5);
+        amrex::Real theta_1 = 0; //M_PI/4*(amrex::Random()-0.5);
         /*if(i == 16 && j == 16)
         {
             theta_0 = M_PI/2;
@@ -33,10 +33,10 @@ state_init(int i, int j, int k,
 
             
         
-        amrex::Real sigma = std::pow(2,-lev);
+        amrex::Real sigma = 1; //std::pow(2,-lev);
         
-        amrex::Real P_0 = amrex::RandomNormal(0,sigma);
-        amrex::Real P_1 = amrex::RandomNormal(0,sigma);
+        amrex::Real P_0 = 0; //amrex::RandomNormal(0,sigma);
+        amrex::Real P_1 = 0; //amrex::RandomNormal(0,sigma);
         
         state_fab(i, j, k, Idx::U_0_Real) = std::cos(theta_0); 
         state_fab(i, j, k, Idx::U_0_Imaginary) = std::sin(theta_0);
