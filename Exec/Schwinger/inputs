@@ -46,7 +46,7 @@ amr.blocking_factor = 8
 amr.regrid_int = 1
 
 # AMR Interpolation 
-amr.interpolation_type = 1
+amr.interpolation_type = 0
 
 # Problem specific boundary conditions 
 domain_lo_bc_types = 1 1
