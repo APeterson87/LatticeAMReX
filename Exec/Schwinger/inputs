@@ -1,18 +1,20 @@
 # Stopping Criteria
-max_step = 10
-num_therm_steps = 1000
-starting_measurements_step = 1100
+max_step = 1000
+num_therm_steps = 150
+starting_measurements_step = 200
 stop_time = 2000000.0
 
-num_hmc_substeps = 1
+num_hmc_substeps = 10
 hmc_tau = 1.0
  
 coupling_beta = 1.0
 mass_0 = 0.1
 wilson_r = 1.0
 Temp_T = 1.0
-coupling_beta_vec = 1.0 4.0
+coupling_beta_lev = 1.0 4.0
 sigma_lev = 1.0 1.0
+temp_lev = 3.0 12.0
+hmc_tau_lev = 0.25 0.2
 
 Use_Dynamical_Fermions =0
 
@@ -39,10 +41,10 @@ amr.v = 1
 
 # Refinement Parameter0s 
 amr.max_level = 1
-amr.max_grid_size = 32
+amr.max_grid_size = 32 8
 amr.ref_ratio = 2
-amr.n_error_buf = 1
-amr.blocking_factor = 8
+amr.n_error_buf = 0
+amr.blocking_factor = 16 4
 amr.regrid_int = 1
 
 # AMR Interpolation 
@@ -62,7 +64,7 @@ problem.cfl = 1.0
 problem.epsilon = 0.01
 
 # Plotting steps 
-amr.plot_int = 1
+amr.plot_int = 1 
 amr.diag_int = -1
 amr.chk_int = -1
 
