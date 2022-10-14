@@ -31,7 +31,7 @@ AmrCoreAdv::AmrCoreAdv ()
     dt.resize(nlevs_max, 1.e100);
 
     grid_new.resize(nlevs_max);
-    grid_old.resize(nlevs_max);
+    //grid_old.resize(nlevs_max);
     grid_hold.resize(nlevs_max);
     grid_msk.resize(nlevs_max);
     
@@ -99,6 +99,8 @@ AmrCoreAdv::Evolve ()
                      .Temp = Temp_T, 
                      .beta_lev = coupling_beta_vec,
                      .sigma_lev = mom_sigma_vec,
+                     .Temp_lev = temp_vec,
+                     .hmc_tau_lev = hmc_tau_vec,
                      
                      .Nx = numcells[0],
                      .Ny = numcells[1],
@@ -140,16 +142,18 @@ AmrCoreAdv::Evolve ()
     
     amrex::Print() << std:: endl << "**********************************************" << std::endl << std::endl;
     
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+    std::this_thread::sleep_for(std::chrono::seconds(2));
     
-    //std::ofstream ActionLev0("ActionLev0.dat");
-    //std::ofstream ActionLev1("ActionLev1.dat");
+    std::ofstream ActionLev0("ActionLev0.dat");
+    std::ofstream ActionLev1("ActionLev1.dat");
     
     int WLcount = 0;
     int num_accepted = 0;
     
-    amrex::Print() << "Sum at level 0 = " << Test_Sum_Lev(grid_new, 0, Param) << std::endl;
-    amrex::Print() << "Sum at level 1 = " << Test_Sum_Lev(grid_new, 1, Param) << std::endl;
+    amrex::Print() << Param.Temp_lev[0] << ' ' << Param.Temp_lev[1] << std::endl;
+    amrex::Print() << Param.hmc_tau_lev[0] << ' ' << Param.hmc_tau_lev[1] << std::endl;
+    //amrex::Print() << "Sum at level 0 = " << Test_Sum_Lev(grid_new, 0, Param) << std::endl;
+    //amrex::Print() << "Sum at level 1 = " << Test_Sum_Lev(grid_new, 1, Param) << std::endl;
     
     for (int step = istep[0]; step < max_step && cur_time < stop_time; ++step)
     {
@@ -182,9 +186,9 @@ AmrCoreAdv::Evolve ()
         }
         
         StatePerturb(grid_new, cur_time, Param);
-        show_momentum(grid_new[1],1,cur_time, geom[lev], Param, 0);
-        FillPatch(1, cur_time, grid_new[1], 0, grid_new[1].nComp());
-        show_momentum(grid_new[1],1,cur_time, geom[lev], Param, 0);
+        //show_momentum(grid_new[1],1,cur_time, geom[lev], Param, 0);
+        //FillPatch(1, cur_time, grid_new[1], 0, grid_new[1].nComp());
+        //show_momentum(grid_new[1],1,cur_time, geom[lev], Param, 0);
 
         amrex::Print() << std::endl << "*************** OLD STATE DATA ***************" << std::endl;
         
@@ -210,7 +214,7 @@ AmrCoreAdv::Evolve ()
         if(r_loc > std::exp(-(HTotalLev-HTotalcurrentLev)/Temp_T) && step >= Param.therm_steps)
         {
             for (int level = 0; level <= finest_level; ++level) {
-                ResetLevel(level, cur_time, grid_hold);
+                MultiFab::Copy(grid_new[level], grid_hold[level], Idx::U_0_Real, Idx::U_0_Real, 4, grid_new[level].nGrow()); 
             }
             amrex::Print() << "NEW STATE REJECTED " << std::endl;
         }
@@ -223,8 +227,8 @@ AmrCoreAdv::Evolve ()
         
         amrex::Print() << "**********************************************" << std::endl << std::endl;
         
-        //ActionLev0 << Action_Gauge_Lev(grid_new, 0, Param)/Test_Sum_Lev(grid_new, 0, Param) << ' ' <<  Action_Momentum_Lev(grid_new, 0)/Test_Sum_Lev(grid_new, 0, Param) << std::endl;
-        //ActionLev1 << Action_Gauge_Lev(grid_new, finest_level, Param)/Test_Sum_Lev(grid_new, finest_level, Param) << ' ' << Action_Momentum_Lev(grid_new, finest_level)/Test_Sum_Lev(grid_new, finest_level, Param) << std::endl;
+        //ActionLev0 << Action_Gauge_Lev(grid_new, 0, Param)/Param.Temp_lev[0] << ' ' <<  Action_Momentum_Lev(grid_new, 0)/Param.Temp_lev[0] << std::endl;
+        //ActionLev1 << Action_Gauge_Lev(grid_new, finest_level, Param)/Param.Temp_lev[finest_level] << ' ' << Action_Momentum_Lev(grid_new, finest_level)/Param.Temp_lev[finest_level] << std::endl;
         
         
 
@@ -266,8 +270,8 @@ AmrCoreAdv::Evolve ()
     amrex::Print() << "Total Accepted = " << num_accepted << std::endl;
     amrex::Print() << "Final Acceptance Rate = " << static_cast<float>(num_accepted)/static_cast<float>(max_step-start_meas_step) << std::endl;
     
-    //ActionLev0.close();
-    //ActionLev1.close();
+    ActionLev0.close();
+    ActionLev1.close();
 
     if (plot_int > 0 && istep[0] > last_plot_file_step) {
         WritePlotFile();
@@ -326,7 +330,9 @@ AmrCoreAdv::MakeNewLevelFromCoarse (int lev, Real time, const BoxArray& ba,
 
     
     grid_new[lev].define(ba, dm, ncomp, nghost);
-    grid_old[lev].define(ba, dm, ncomp, nghost);
+    //grid_old[lev].define(ba, dm, ncomp, nghost);
+    grid_hold[lev].define(ba, dm, ncomp, nghost);
+    
 
     t_new[lev] = time;
     t_old[lev] = time - 1.e200;
@@ -361,11 +367,16 @@ AmrCoreAdv::RemakeLevel (int lev, Real time, const BoxArray& ba,
 
     MultiFab new_state(ba, dm, ncomp, nghost);
     MultiFab old_state(ba, dm, ncomp, nghost);
+    MultiFab hold_state(ba, dm, ncomp, nghost);
+    
+
 
     FillPatch(lev, time, new_state, 0, ncomp);
-
+    
     std::swap(new_state, grid_new[lev]);
-    std::swap(old_state, grid_old[lev]);
+    //std::swap(old_state, grid_old[lev]);
+    std::swap(hold_state, grid_hold[lev]);
+
 
     t_new[lev] = time;
     t_old[lev] = time - 1.e200;
@@ -392,7 +403,7 @@ AmrCoreAdv::ResetLevel (int lev, Real time, amrex::Vector<amrex::MultiFab>& hold
     FillPatch(lev, time, new_state, 0, ncomp);
 
     std::swap(new_state, grid_new[lev]);
-    std::swap(old_state, grid_old[lev]);
+    //std::swap(old_state, grid_old[lev]);
     
     
     t_new[lev] = time;
@@ -407,7 +418,7 @@ void
 AmrCoreAdv::ClearLevel (int lev)
 {
     grid_new[lev].clear();
-    grid_old[lev].clear();
+    //grid_old[lev].clear();
     grid_hold[lev].clear();
 
 }
@@ -422,7 +433,7 @@ void AmrCoreAdv::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& ba
     const int nghost = NUM_GHOST_CELLS;
     
     grid_new[lev].define(ba, dm, ncomp, nghost);
-    grid_old[lev].define(ba, dm, ncomp, nghost);
+    //grid_old[lev].define(ba, dm, ncomp, nghost);
     
     grid_hold[lev].define(ba, dm, ncomp, nghost);
     
@@ -544,8 +555,11 @@ AmrCoreAdv::ReadParameters ()
         pp.get("mass_0", mass_0);
         pp.get("wilson_r", wilson_r);
         pp.get("Temp_T", Temp_T);
-        pp.getarr("coupling_beta_vec", coupling_beta_vec);
+        pp.getarr("coupling_beta_lev", coupling_beta_vec);
         pp.getarr("sigma_lev", mom_sigma_vec);
+        pp.getarr("temp_lev", temp_vec);
+        pp.getarr("hmc_tau_lev", hmc_tau_vec);
+
         
         pp.get("Use_Dynamical_Fermions", use_dynamical_fermi);
         pp.get("BiCGThresh", BiCGThresh);
@@ -662,8 +676,8 @@ template <typename FAB>
 void AmrCoreAdv::adam_down_nodal (const FabArray<FAB>& fine, FabArray<FAB>& crse,
                          const IntVect& ratio, int ngcrse, bool mfiter_is_definitely_safe)
 {
-    AMREX_ASSERT(fine.is_nodal());
-    AMREX_ASSERT(crse.is_nodal());
+    //AMREX_ASSERT(fine.is_nodal());
+    //AMREX_ASSERT(crse.is_nodal());
     AMREX_ASSERT(crse.nComp() == fine.nComp());
 
     int ncomp = crse.nComp();
@@ -834,8 +848,8 @@ AmrCoreAdv::FillIntermediatePatch (int lev, Real time, MultiFab& mf, int icomp, 
         Vector<Real> ctime, ftime;
 
         // interpolate coarse data in time
-        MultiFab mf_coarse_temp(grid_old[lev-1].boxArray(), grid_old[lev-1].DistributionMap(),
-                                grid_old[lev-1].nComp(), NUM_GHOST_CELLS);
+        MultiFab mf_coarse_temp(grid_hold[lev-1].boxArray(), grid_hold[lev-1].DistributionMap(),
+                                grid_hold[lev-1].nComp(), NUM_GHOST_CELLS);
 
         // fill mf_coarse_temp using MC Equation 39 at "time"
         Real timestep_fraction = (time - t_old[lev-1])/dt[lev-1];
@@ -934,12 +948,12 @@ AmrCoreAdv::GetData (int lev, Real time, Vector<MultiFab*>& data, Vector<Real>& 
     }
     else if (time > t_old[lev] - teps && time < t_old[lev] + teps)
     {
-        data.push_back(&grid_old[lev]);
+        data.push_back(&grid_hold[lev]);
         datatime.push_back(t_old[lev]);
     }
     else
     {
-        data.push_back(&grid_old[lev]);
+        data.push_back(&grid_hold[lev]);
         data.push_back(&grid_new[lev]);
         datatime.push_back(t_old[lev]);
         datatime.push_back(t_new[lev]);
@@ -1340,7 +1354,7 @@ AmrCoreAdv::ReadCheckpointFile ()
         int ncomp = Idx::NumScalars;
         int nghost = NUM_GHOST_CELLS;
 
-        grid_old[lev].define(grids[lev], dmap[lev], ncomp, nghost);
+        grid_hold[lev].define(grids[lev], dmap[lev], ncomp, nghost);
         grid_new[lev].define(grids[lev], dmap[lev], ncomp, nghost);
 
         // also create the time integrator for this level
@@ -1424,7 +1438,7 @@ AmrCoreAdv::InitializeFromFile ()
         // build MultiFab data
         int ncomp = Idx::NumScalars;
         int nghost = NUM_GHOST_CELLS;
-        grid_old[lev].define(grids[lev], dmap[lev], ncomp, nghost);
+        grid_hold[lev].define(grids[lev], dmap[lev], ncomp, nghost);
         grid_new[lev].define(grids[lev], dmap[lev], ncomp, nghost);
 
     }
@@ -1563,7 +1577,7 @@ AmrCoreAdv::StateTrajectory(amrex::Vector<amrex::MultiFab>& state, const amrex::
 
     for(int lev = finest_level; lev >= 0; lev--)
     {
-        
+           Real dtau = Param.hmc_tau_lev[lev]/Param.hmc_substeps;
 
            FillPatch(lev, time, state[lev], 0, state[lev].nComp());  //Preping for the next step, FillPatches at each level. 
            update_momentum(state[lev], lev, time, geom[lev], Param, dtau/2.0);
@@ -1578,6 +1592,8 @@ AmrCoreAdv::StateTrajectory(amrex::Vector<amrex::MultiFab>& state, const amrex::
     {
         for(int lev = finest_level; lev >= 0; lev--)  //Update finer levels first.
         {
+            
+                Real dtau = Param.hmc_tau_lev[lev]/Param.hmc_substeps;
 
                 //Fill Ghost Cells right before I need them.  Less confusing/ambiguous.
                 FillPatch(lev, time, state[lev], 0, state[lev].nComp());
@@ -1600,6 +1616,8 @@ AmrCoreAdv::StateTrajectory(amrex::Vector<amrex::MultiFab>& state, const amrex::
     /////////////////////////////////////////////////////////////////////////////////////////
     for(int lev = finest_level; lev >= 0; lev--)
     {
+        
+            Real dtau = Param.hmc_tau_lev[lev]/Param.hmc_substeps;
 
             FillPatch(lev, time, state[lev], 0, state[lev].nComp());  //Preping for the next step, FillPatches at each level.
             update_gauge(state[lev], lev, time, geom[lev], Param, dtau);
@@ -1622,7 +1640,7 @@ void AmrCoreAdv::update_gauge (MultiFab& state_mf, int lev, const amrex::Real ti
     int ncomp = state_mf.nComp();
     
 #ifdef _OPENMP
-#pragma omp parallelvim invavasvasf asf 
+#pragma omp parallel
 #endif
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
@@ -1637,6 +1655,7 @@ void AmrCoreAdv::update_gauge (MultiFab& state_mf, int lev, const amrex::Real ti
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
             state_update_gauge(i, j, k, state_fab, time, dx, geom.data(), dtau);
+            //if (lev == 1) Print() << i << ' ' << j << ' ' << state_fab(i, j, k, Idx::U_0_Real) << std::endl;
     });
   }
    
@@ -1734,8 +1753,12 @@ Real AmrCoreAdv::Total_Action_Lev(amrex::Vector<amrex::MultiFab>& state, Paramet
     Real MomAction = 0;
     for(int i = 0; i <= high_lev; i++)
     {
-        GaugeAction += Action_Gauge_Lev(state, i, Param);
-        MomAction += Action_Momentum_Lev(state, i);
+        GaugeAction += Action_Gauge_Lev(state, i, Param)/Param.Temp_lev[i];
+        MomAction += Action_Momentum_Lev(state, i)/Param.Temp_lev[i];
+        
+        //GaugeAction += Test_Sum_Lev(state, i, Param);
+        //MomAction += Test_Sum_Lev(state, i, Param);
+        
     }
     Real TotalAction = GaugeAction + MomAction;
     
@@ -1941,16 +1964,19 @@ Real AmrCoreAdv::Action_Gauge_Lev (amrex::Vector<amrex::MultiFab>& state, int le
 
 
         BoxArray fba = state[lev+1].boxArray();
-        const iMultiFab& mask = makeFineMask(state[lev], fba.enclosedCells(), IntVect(2));  // the last argument is the refinement ratio
+        const iMultiFab& mask = makeFineMask(state[lev], fba, IntVect(2));  // the last argument is the refinement ratio
 
         ReduceOps<ReduceOpSum> reduce_operations;
         ReduceData<Real> reduce_data(reduce_operations);
         using ReduceTuple = typename decltype(reduce_data)::Type;
-
+        
+        
+        //Print() << state_mf.boxArray() << std::endl;
+        //Print() << mask.boxArray() << std::endl;
+        
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
-
       for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
       {
         const Box& bx = mfi.tilebox();
@@ -1964,6 +1990,7 @@ Real AmrCoreAdv::Action_Gauge_Lev (amrex::Vector<amrex::MultiFab>& state, int le
         reduce_operations.eval(bx, reduce_data,
         [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
         {
+            //if(!fine_mask_arr(i,j,k)) Print() << fine_mask_arr(i, j, k) << ' ' << i << ' ' << j << std::endl;
             return (!fine_mask_arr(i, j, k)*sum_action_gauge(i,j,k,state_fab, Param.beta_lev[lev]));
         });
       }
@@ -2021,7 +2048,7 @@ Real AmrCoreAdv::Action_Momentum_Lev (amrex::Vector<amrex::MultiFab>& state, int
 
 
         BoxArray fba = state[lev+1].boxArray();
-        const iMultiFab& mask = makeFineMask(state[lev], fba.enclosedCells(), IntVect(2));  // the last argument is the refinement ratio
+        const iMultiFab& mask = makeFineMask(state[lev], fba, IntVect(2));  // the last argument is the refinement ratio
 
         ReduceOps<ReduceOpSum> reduce_operations;
         ReduceData<Real> reduce_data(reduce_operations);

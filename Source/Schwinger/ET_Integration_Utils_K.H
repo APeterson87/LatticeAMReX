@@ -38,6 +38,8 @@ struct Parameters {
             
             std::vector<Real> beta_lev;
             std::vector<Real> sigma_lev;
+            std::vector<Real> Temp_lev;
+            std::vector<Real> hmc_tau_lev;
     
     //Problem Parameters
             int Nx = 8;
@@ -173,7 +175,7 @@ void adam_avgdown_nodes (Box const& bx, Array4<T> const& crse,
             int jj = j*facy;
             AMREX_PRAGMA_SIMD
             for (int i = clo.x; i <= chi.x; ++i) {
-                //crse(i,j,0,n+ccomp) = fine(i*facx+2,jj,0,n+fcomp);
+                //crse(i,j,0,n+ccomp) = 0; //fine(i*facx+2,jj,0,n+fcomp);
                 if(n < 4)
                 {
                     crse(i,j,0,0+ccomp) = fine(i*facx,jj,0,0+fcomp)*fine(i*facx+1,jj,0,0+fcomp) - fine(i*facx,jj,0,1+fcomp)*fine(i*facx+1,jj,0,1+fcomp);
@@ -189,7 +191,7 @@ void adam_avgdown_nodes (Box const& bx, Array4<T> const& crse,
 }
 /*
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-void adam_avgdown (Box const& bx, Array4<Real> const& crse,
+void adam_avgdown_nodes (Box const& bx, Array4<Real> const& crse,
                     Array4<Real const> const& fine,
                     int ccomp, int fcomp, int ncomp,
                     IntVect const& ratio) noexcept
@@ -210,7 +212,7 @@ void adam_avgdown (Box const& bx, Array4<Real> const& crse,
             for (int iref = 0; iref < facx; ++iref) {
                 c += fine(ii+iref,jj+jref,0,n+fcomp);
             }}
-            crse(i,j,0,n+ccomp) = volfrac * c;
+            crse(i,j,0,n+ccomp) = c;
         }}
     }
 }

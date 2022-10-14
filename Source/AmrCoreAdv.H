@@ -273,7 +273,7 @@ private:
     // array of multifabs to store the solution at each level of refinement
     // after advancing a level we use "swap".
     amrex::Vector<amrex::MultiFab> grid_new;
-    amrex::Vector<amrex::MultiFab> grid_old;
+    //amrex::Vector<amrex::MultiFab> grid_old;
     amrex::Vector<amrex::MultiFab> grid_hold;
     amrex::Vector<std::unique_ptr<amrex::iMultiFab>> grid_msk;
 
@@ -321,6 +321,8 @@ private:
     
     Vector<Real> coupling_beta_vec;
     Vector<Real> mom_sigma_vec;
+    Vector<Real> temp_vec;
+    Vector<Real> hmc_tau_vec;
 
     // if >= 0 we restart from a checkpoint
     std::string restart_chkfile = "";
