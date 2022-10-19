@@ -29,7 +29,7 @@ adaminterp_interp (Box const& bx,
                 //fine(i,j,0,n+fcomp) = crse(ic,jc,0,n+ccomp);
                 if(n < 4)
                 {
-                    if(i%2+j%2 == 0)
+                    /*if(i%2+j%2 == 0)
                         fine(i,j,0,n+fcomp) = crse(ic,jc,0,n+ccomp);
                     else
                     {
@@ -37,12 +37,20 @@ adaminterp_interp (Box const& bx,
                             fine(i,j,0,n+fcomp) = 1;
                         else
                             fine(i,j,0,n+fcomp) = 0;
-                    }
+                    }*/
                     
                 
                 }
+                else if(n == 4 || n == 5)
+                {
+                    fine(i,j,0,n+fcomp) = 0.5*crse(ic,jc,0,n+ccomp);
+                    /*if(i%2+j%2 == 0)
+                        fine(i,j,0,n+fcomp) = 0*crse(ic,jc,0,n+ccomp);
+                    else
+                        fine(i,j,0,n+fcomp) = 0;*/
+                }
                 else
-                    fine(i,j,0,n+fcomp) = crse(ic,jc,0,n+ccomp);
+                    fine(i,j,0,n+fcomp) = 0.5*crse(ic,jc,0,n+ccomp);
                     
             }
         }

@@ -23,6 +23,6 @@ state_is_tagged(int i, int j, int k,
         amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1]; 
         amrex::Real x2 = (k + 0.5)*geom.CellSize(2) + domain_xlo[2]; 
             
-        return  (time < 100.0) || ((i < 5 || i > 27) || (j < 5 || j > 27));  //(i == 0); // && (((i == 8) && (j == 8)) || ((i == 24) && (j == 24))); //(time < 10.0) || ((time > 20.0) && (i == 32) && (j == 16));
+        return  (time < 100.0); //(i > 8 && i < 24);//(time < 100.0) || ((i < 5 || i > 27) || (j < 5 || j > 27));  //(i == 0); // && (((i == 8) && (j == 8)) || ((i == 24) && (j == 24))); //(time < 10.0) || ((time > 20.0) && (i == 32) && (j == 16));
 }
 #endif

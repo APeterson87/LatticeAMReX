@@ -65,6 +65,8 @@ AmrCoreAdv::AmrCoreAdv ()
         mapper = &node_bilinear_interp;
     else if (interpolation_type == InterpType::CellConservativeLinear)
         mapper = &cell_cons_interp;
+    else if (interpolation_type == InterpType::CellBilinear)
+        mapper = &cell_bilinear_interp;
     else if (interpolation_type == InterpType::CellConservativeQuartic)
         mapper = &quartic_interp;
     else {
@@ -72,7 +74,7 @@ AmrCoreAdv::AmrCoreAdv ()
     }*/
     
     
-    mapper = &adam_interp;
+   mapper = &adam_interp;
 
 }
 
@@ -150,8 +152,8 @@ AmrCoreAdv::Evolve ()
     int WLcount = 0;
     int num_accepted = 0;
     
-    amrex::Print() << Param.Temp_lev[0] << ' ' << Param.Temp_lev[1] << std::endl;
-    amrex::Print() << Param.hmc_tau_lev[0] << ' ' << Param.hmc_tau_lev[1] << std::endl;
+    //amrex::Print() << Param.Temp_lev[0] << ' ' << Param.Temp_lev[1] << std::endl;
+    //amrex::Print() << Param.hmc_tau_lev[0] << ' ' << Param.hmc_tau_lev[1] << std::endl;
     //amrex::Print() << "Sum at level 0 = " << Test_Sum_Lev(grid_new, 0, Param) << std::endl;
     //amrex::Print() << "Sum at level 1 = " << Test_Sum_Lev(grid_new, 1, Param) << std::endl;
     
@@ -182,26 +184,29 @@ AmrCoreAdv::Evolve ()
         
         for (int level = 0; level <= finest_level; ++level) {
             //Copy U and P into grid_hold
-            MultiFab::Copy(grid_hold[level], grid_new[level], Idx::U_0_Real, Idx::U_0_Real, 4, grid_new[level].nGrow());    
+            MultiFab::Copy(grid_hold[level], grid_new[level], Idx::U_0_Real, Idx::U_0_Real, 6, grid_new[level].nGrow());    
         }
         
-        StatePerturb(grid_new, cur_time, Param);
+        if( cur_time < 90.0) StatePerturb(grid_new, cur_time, Param);
         //show_momentum(grid_new[1],1,cur_time, geom[lev], Param, 0);
         //FillPatch(1, cur_time, grid_new[1], 0, grid_new[1].nComp());
         //show_momentum(grid_new[1],1,cur_time, geom[lev], Param, 0);
 
         amrex::Print() << std::endl << "*************** OLD STATE DATA ***************" << std::endl;
         
-        Real HTotalcurrentLev = Total_Action_Lev(grid_new, Param, finest_level);
+        //Real HTotalcurrentLev = Total_Action_Lev(grid_new, Param, finest_level);
+        Real HTotalcurrentLev = Total_Action(grid_new[0], 0, Param);
+        
         amrex::Print() << "**********************************************" << std::endl << std::endl;
 
-        StateTrajectory(grid_new, cur_time, geom, Param);
+        //StateTrajectory(grid_new, cur_time, geom, Param);
 
         amrex::Print() << std::endl;
         
         amrex::Print() << "*************** NEW STATE DATA ***************" << std::endl;
         
-        Real HTotalLev = Total_Action_Lev(grid_new, Param, finest_level);
+        //Real HTotalLev = Total_Action_Lev(grid_new, Param, finest_level);
+        Real HTotalLev = Total_Action(grid_new[0], 0, Param);
         amrex::Print() << "**********************************************" << std::endl;
         
         Real r_loc = std::rand()/(static_cast <float> (RAND_MAX));
@@ -214,7 +219,7 @@ AmrCoreAdv::Evolve ()
         if(r_loc > std::exp(-(HTotalLev-HTotalcurrentLev)/Temp_T) && step >= Param.therm_steps)
         {
             for (int level = 0; level <= finest_level; ++level) {
-                MultiFab::Copy(grid_new[level], grid_hold[level], Idx::U_0_Real, Idx::U_0_Real, 4, grid_new[level].nGrow()); 
+                MultiFab::Copy(grid_new[level], grid_hold[level], Idx::U_0_Real, Idx::U_0_Real, 6, grid_new[level].nGrow()); 
             }
             amrex::Print() << "NEW STATE REJECTED " << std::endl;
         }
@@ -1585,7 +1590,7 @@ AmrCoreAdv::StateTrajectory(amrex::Vector<amrex::MultiFab>& state, const amrex::
        
     }
 
-    AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
+    //AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
     //////////////
     
     for(int i = 1; i < Param.hmc_substeps; i++)
@@ -1608,7 +1613,7 @@ AmrCoreAdv::StateTrajectory(amrex::Vector<amrex::MultiFab>& state, const amrex::
 
         }
         
-        AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
+        //AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
             
 
     }
@@ -1630,7 +1635,7 @@ AmrCoreAdv::StateTrajectory(amrex::Vector<amrex::MultiFab>& state, const amrex::
         
     }
     
-    AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
+    //AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
 }
 
 void AmrCoreAdv::update_gauge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param, amrex::Real dtau)

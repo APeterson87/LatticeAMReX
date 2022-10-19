@@ -176,6 +176,13 @@ void adam_avgdown_nodes (Box const& bx, Array4<T> const& crse,
             AMREX_PRAGMA_SIMD
             for (int i = clo.x; i <= chi.x; ++i) {
                 //crse(i,j,0,n+ccomp) = 0; //fine(i*facx+2,jj,0,n+fcomp);
+                
+                /*if (n == Idx::P_0 || n == Idx::P_1)
+                {
+                    crse(i,j,0,Idx::P_0+ccomp) = fine(i*facx,jj,0,Idx::P_0+fcomp);
+                    crse(i,j,0,Idx::P_1+ccomp) = fine(i*facx,jj,0,Idx::P_1+fcomp);
+                }*/
+                
                 if(n < 4)
                 {
                     crse(i,j,0,0+ccomp) = fine(i*facx,jj,0,0+fcomp)*fine(i*facx+1,jj,0,0+fcomp) - fine(i*facx,jj,0,1+fcomp)*fine(i*facx+1,jj,0,1+fcomp);
@@ -183,8 +190,18 @@ void adam_avgdown_nodes (Box const& bx, Array4<T> const& crse,
                     crse(i,j,0,2+ccomp) = fine(i*facx,jj,0,2+fcomp)*fine(i*facx,jj+1,0,2+fcomp) - fine(i*facx,jj,0,3+fcomp)*fine(i*facx,jj+1,0,3+fcomp);
                     crse(i,j,0,3+ccomp) = fine(i*facx,jj,0,2+fcomp)*fine(i*facx+1,jj+1,0,3+fcomp) + fine(i*facx,jj,0,3+fcomp)*fine(i*facx,jj+1,0,2+fcomp);
                 }
-                else
-                    crse(i,j,0,n+ccomp) = fine(i*facx,jj,0,n+fcomp);
+                else if (n == Idx::theta_0 || n == Idx::theta_1)
+                {
+                    //crse(i,j,0,Idx::theta_0+ccomp) = fine(i*facx,jj,0,Idx::theta_0+fcomp) + fine(i*facx+1,jj,0,Idx::theta_0+fcomp);
+                    //crse(i,j,0,Idx::theta_1+ccomp) = fine(i*facx,jj,0,Idx::theta_1+fcomp) + fine(i*facx,jj+1,0,Idx::theta_1+fcomp);
+                }
+                else if (n == Idx::P_0 || n == Idx::P_1)
+                {
+                    crse(i,j,0,Idx::P_0+ccomp) = fine(i*facx,jj,0,Idx::P_0+fcomp) + fine(i*facx+1,jj,0,Idx::P_0+fcomp) + fine(i*facx,jj+1,0,Idx::P_0+fcomp) + fine(i*facx+1,jj+1,0,Idx::P_0+fcomp);
+                    crse(i,j,0,Idx::P_1+ccomp) = fine(i*facx,jj,0,Idx::P_1+fcomp) + fine(i*facx,jj+1,0,Idx::P_1+fcomp) + fine(i*facx + 1,jj,0,Idx::P_1+fcomp) + fine(i*facx + 1,jj+1,0,Idx::P_1+fcomp);
+                }
+                //else
+                    //crse(i,j,0,n+ccomp) = fine(i*facx,jj,0,n+fcomp);
             }
         }
     }
