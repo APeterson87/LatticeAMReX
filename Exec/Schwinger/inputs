@@ -4,15 +4,15 @@ num_therm_steps = 100
 starting_measurements_step = 200
 stop_time = 2000000.0
 
-num_hmc_substeps = 10
-hmc_tau = 1.0
+num_hmc_substeps = 25
+hmc_tau = 0.0
  
 coupling_beta = 1.0
 mass_0 = 0.1
 wilson_r = 1.0
 Temp_T = 1.0
 coupling_beta_lev = 1.0 1.0
-sigma_lev = 1.0 0.5
+sigma_lev = 1.0 1.0
 temp_lev = 1.0 1.0
 hmc_tau_lev = 1.0 1.0
 
@@ -22,33 +22,34 @@ BiCGThresh = 1e-16
 BiCG_Max_Iter = 10000
 Use_BiCG_Stab = 0
 
-APE_iter = 1
+APE_iter = 0
 APE_alpha = 0.5
 
 measWilsonLoops_Interval = 100
 CheckReversedTrajectoryInterval = 1000
 
 # Problem Size & Geometry 
-amr.n_cell = 32 32
+amr.n_cell = 64 64
 
 geometry.is_periodic = 1 1 
 geometry.coord_sys = 0 
-geometry.prob_lo = -16.0 -16.0 #-20.9805 -20.9805 -20.9805 
-geometry.prob_hi = 16.0 16.0 #20.9805 20.9805 20.9805 
+geometry.prob_lo = -64.0 -64.0 #-20.9805 -20.9805 -20.9805 
+geometry.prob_hi = 64.0 64.0 #20.9805 20.9805 20.9805 
 
 # Turn on verbosity in amr 
 amr.v = 1
 
 # Refinement Parameter0s 
 amr.max_level = 1
-amr.max_grid_size = 32 32
+amr.max_grid_size = 128 128
 amr.ref_ratio = 2
 amr.n_error_buf = 0
-amr.blocking_factor = 16 8
-amr.regrid_int = 1
+amr.blocking_factor = 2 2
+amr.regrid_int = 100
+amr.grid_eff = 0.999
 
 # AMR Interpolation 
-amr.interpolation_type = 3
+amr.interpolation_type = 0
 
 # Problem specific boundary conditions 
 domain_lo_bc_types = 1 1
@@ -60,7 +61,7 @@ problem.error_comp = 0
 
 # Problem specific inputs 
 problem.elliptic = 0
-problem.cfl = 1.0
+problem.cfl = 0.5
 problem.epsilon = 0.01
 
 # Plotting steps 

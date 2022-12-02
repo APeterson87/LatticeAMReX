@@ -18,21 +18,7 @@ state_post_update(int i, int j, int k,
 {
         const auto domain_xlo = geom.ProbLo();
         
-        amrex::Real U_0_Real = state_fab(i, j, k, Idx::U_0_Real);
-        amrex::Real U_0_Imaginary = state_fab(i, j, k, Idx::U_0_Imaginary);
-        
-        amrex::Real U_1_Real = state_fab(i, j, k, Idx::U_1_Real);
-        amrex::Real U_1_Imaginary = state_fab(i, j, k, Idx::U_1_Imaginary);
-        
-        amrex::Real P_0 = state_fab(i, j, k, Idx::P_0);
-        amrex::Real P_1 = state_fab(i, j, k, Idx::P_1);
-        
-        
-        //state_fab(i, j, k, Idx::U_0_Real) = std::cos(epsilon*P_0)*U_0_Real - std::sin(epsilon*P_0)*U_0_Imaginary;
-        //state_fab(i, j, k, Idx::U_0_Imaginary) = std::sin(epsilon*P_0)*U_0_Real + std::cos(epsilon*P_0)*U_0_Imaginary;
-        
-        //state_fab(i, j, k, Idx::U_1_Real) = std::cos(epsilon*P_1)*U_1_Real - std::sin(epsilon*P_1)*U_1_Imaginary;
-        //state_fab(i, j, k, Idx::U_1_Imaginary) = std::sin(epsilon*P_1)*U_1_Real + std::cos(epsilon*P_1)*U_1_Imaginary;
+
 
 }
 

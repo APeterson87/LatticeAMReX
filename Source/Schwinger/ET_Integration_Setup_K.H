@@ -5,18 +5,17 @@
 #include <AMReX_Array4.H> 
 
 namespace Idx { 
-         enum ETIndexes {U_0_Real, 
-                         U_0_Imaginary, 
-                         U_1_Real, 
+         enum ETIndexes {U_0_Real,
+                         U_0_Imaginary,
+                         U_1_Real,
                          U_1_Imaginary,
-                         theta_0,
-                         theta_1,
-                         P_0, 
-                         P_1,
+                         Pi_0,
+                         Pi_1,
                          Phi_0_Real, 
                          Phi_0_Imaginary, 
                          Phi_1_Real, 
                          Phi_1_Imaginary,
+                         ActionDensity,
                          NumScalars}; 
 };
 

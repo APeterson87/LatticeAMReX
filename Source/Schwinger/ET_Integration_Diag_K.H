@@ -15,23 +15,29 @@ state_diagnostics(int i, int j, int k,
         amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dx, 
         const amrex::GeometryData& geom) noexcept 
 {
-        //const auto domain_xlo = geom.ProbLo();
+        const auto domain_xlo = geom.ProbLo(); 
         
-        amrex::Real U1_r = state_fab(i, j, k, Idx::U_0_Real);
-        amrex::Real U1_i = state_fab(i, j, k, Idx::U_0_Imaginary);
+        amrex::Real x0 = (i + 0.5)*geom.CellSize(0) + domain_xlo[0]; 
+        amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1];
+    
+        amrex::Real dx0 = geom.CellSize(0);
+        amrex::Real dx1 = geom.CellSize(1);
         
-        amrex::Real U2_r = state_fab(i+1, j, k, Idx::U_1_Real);
-        amrex::Real U2_i = state_fab(i+1, j, k, Idx::U_1_Imaginary);
+        /*amrex::Real U1_r = std::cos(state_fab(i, j, k, Idx::Theta_0));
+        amrex::Real U1_i = std::sin(state_fab(i, j, k, Idx::Theta_0));
         
-        amrex::Real U3_r = state_fab(i, j+1, k, Idx::U_0_Real);
-        amrex::Real U3_i = -state_fab(i, j+1, k, Idx::U_0_Imaginary);
+        amrex::Real U2_r = std::cos(state_fab(i+1, j, k, Idx::Theta_1));
+        amrex::Real U2_i = std::sin(state_fab(i+1, j, k, Idx::Theta_1));
         
-        amrex::Real U4_r = state_fab(i, j, k, Idx::U_1_Real);
-        amrex::Real U4_i = -state_fab(i, j, k, Idx::U_1_Imaginary);
+        amrex::Real U3_r = std::cos(state_fab(i, j+1, k, Idx::Theta_0));
+        amrex::Real U3_i = -std::sin(state_fab(i, j+1, k, Idx::Theta_0));
         
+        amrex::Real U4_r = std::cos(state_fab(i, j, k, Idx::Theta_1));
+        amrex::Real U4_i = -std::sin(state_fab(i, j, k, Idx::Theta_1));
+    
         amrex::Real plaq_re = U1_i*U2_i*U3_i*U4_i - U1_i*U2_i*U3_r*U4_r - U1_i*U2_r*U3_i*U4_r - U1_i*U2_r*U3_r*U4_i - U1_r*U2_i*U3_i*U4_r - U1_r*U2_i*U3_r*U4_i - U1_r*U2_r*U3_i*U4_i + U1_r*U2_r*U3_r*U4_r;
         
-        diag(i, j, k, Diag::ActionDensity) = 1-plaq_re;
+        diag(i, j, k, Diag::ActionDensity) = 1-plaq_re;*/
         
         
 }

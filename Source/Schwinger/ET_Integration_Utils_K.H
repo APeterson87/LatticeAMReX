@@ -169,42 +169,83 @@ void adam_avgdown_nodes (Box const& bx, Array4<T> const& crse,
     const auto chi = ubound(bx);
     const int facx = ratio[0];
     const int facy = ratio[1];
+    Real alpha = 0.1;
 
-    for (int n = 0; n < ncomp; ++n) {
         for     (int j = clo.y; j <= chi.y; ++j) {
             int jj = j*facy;
             AMREX_PRAGMA_SIMD
             for (int i = clo.x; i <= chi.x; ++i) {
-                //crse(i,j,0,n+ccomp) = 0; //fine(i*facx+2,jj,0,n+fcomp);
+                int ii = i*facx;
                 
-                /*if (n == Idx::P_0 || n == Idx::P_1)
-                {
-                    crse(i,j,0,Idx::P_0+ccomp) = fine(i*facx,jj,0,Idx::P_0+fcomp);
-                    crse(i,j,0,Idx::P_1+ccomp) = fine(i*facx,jj,0,Idx::P_1+fcomp);
-                }*/
+                int itake = amrex::Random_int(2);
+                int jtake = amrex::Random_int(2);
+                    /*
+                    crse(i,j,0,ccomp) = fine(ii+itake,jj+jtake,0,fcomp);
+                    crse(i,j,0,1+ccomp) = fine(ii+itake,jj+jtake,0,1+fcomp);
+                    */
+                    
+                    Real Uf_0_R_00 = fine(ii, jj, 0, fcomp);
+                    Real Uf_0_I_00 = fine(ii, jj, 0, 1+fcomp);
+                    
+                    Real Thetaf_0_00 = std::atan2(Uf_0_I_00,Uf_0_R_00);
+                    
+                    Real Uf_0_R_0p = fine(ii, jj+1, 0, fcomp);
+                    Real Uf_0_I_0p = fine(ii, jj+1, 0, 1+fcomp);
+                    
+                    Real Thetaf_0_0p = std::atan2(Uf_0_I_0p,Uf_0_R_0p);
+                    
+                    Real Uf_1_R_00 = fine(ii, jj, 0, 2+fcomp);
+                    Real Uf_1_I_00 = fine(ii, jj, 0, 3+fcomp);
+                    
+                    Real Thetaf_1_00 = std::atan2(Uf_1_I_00,Uf_1_R_00);
+                    
+                    Real Uf_1_R_p0 = fine(ii+1, jj, 0, 2+fcomp);
+                    Real Uf_1_I_p0 = fine(ii+1, jj, 0, 3+fcomp);
+                    
+                    Real Thetaf_1_p0 = std::atan2(Uf_1_I_p0,Uf_1_R_p0);
+                    
+                    Real Theta_0 = 0.5*(Thetaf_0_00 + Thetaf_0_0p);
+                    Real Theta_1 = 0.5*(Thetaf_1_00 + Thetaf_1_p0);
+                    
+                    crse(i,j,0,ccomp) = std::cos(Theta_0);
+                    crse(i,j,0,1+ccomp) = std::sin(Theta_0);
+                    crse(i,j,0,2+ccomp) = std::cos(Theta_1);
+                    crse(i,j,0,3+ccomp) = std::sin(Theta_1);
+                    
+                    //crse(i,j,0,ccomp) = 0.5*(fine(ii,jj,0,fcomp)+fine(ii,jj+1,0,fcomp));
+                    //crse(i,j,0,1+ccomp) = 0.5*(fine(ii,jj,0,1+fcomp)+fine(ii+1,jj,0,1+fcomp));
+                    
+                    /*
+                    Real staple0 = 0;
+                    staple0 += alpha/2*(fine(ii,jj,0,1+fcomp)+fine(ii,jj+1,0,fcomp)-fine(ii+1,jj,0,1+fcomp));
+                    staple0 += alpha/2*(-fine(ii,jj-1,0,1+fcomp) + fine(ii,jj-1,0,fcomp) + fine(ii+1,jj-1,0,1+fcomp));
+                    
+                    Real staple1 = 0;
+                    staple1 += alpha/2*(fine(ii,jj,0,fcomp) + fine(ii+1,jj,0,fcomp+1) - fine(ii,jj+1,0,fcomp)); 
+                    staple1 += alpha/2*(-fine(ii-1,jj,0,fcomp) + fine(ii-1,jj,0,fcomp+1) + fine(ii-1,jj+1,0,fcomp));
+                    
+                    crse(i,j,0,ccomp) = (1-alpha)*fine(ii,jj,0,fcomp) + staple0;
+                    crse(i,j,0,1+ccomp) = (1-alpha)*fine(ii,jj,0,1+fcomp) + staple1;
+                    
+                    
+                    /*crse(i,j,0,2+ccomp) = 0.5*(fine(ii,jj,0,2+fcomp) + fine(ii+1,jj,0,2+fcomp));
+                    crse(i,j,0,3+ccomp) = 0.5*(fine(ii,jj,0,3+fcomp) + fine(ii,jj+1,0,3+fcomp));
+                    crse(i,j,0,8+ccomp) = 0*(fine(ii,jj,0,8+fcomp) + fine(ii,jj+1,0,8+fcomp)+fine(ii+1,jj,0,8+fcomp) + fine(ii+1,jj+1,0,8+fcomp));
+                    */
+                    
+                    //crse(i,j,0,ccomp) = 0.25*(fine(ii,jj,0,0+fcomp) + fine(ii,jj+1,0,0+fcomp)+fine(ii+1,jj,0,0+fcomp) + fine(ii+1,jj+1,0,0+fcomp));
+                    //crse(i,j,0,1+ccomp) = 0.25*(fine(ii,jj,0,1+fcomp) + fine(ii,jj+1,0,1+fcomp)+fine(ii+1,jj,0,1+fcomp) + fine(ii+1,jj+1,0,1+fcomp));
+                    crse(i,j,0,4+ccomp) = fine(ii+itake,jj+jtake,0,4+fcomp); //0.25*(fine(ii,jj,0,2+fcomp) + fine(ii,jj+1,0,2+fcomp)+fine(ii+1,jj,0,2+fcomp) + fine(ii+1,jj+1,0,2+fcomp));
+                    crse(i,j,0,5+ccomp) = fine(ii+itake,jj+jtake,0,5+fcomp); //0.25*(fine(ii,jj,0,3+fcomp) + fine(ii,jj+1,0,3+fcomp)+fine(ii+1,jj,0,3+fcomp) + fine(ii+1,jj+1,0,3+fcomp));
+                    crse(i,j,0,10+ccomp) = 0*(fine(ii,jj,0,10+fcomp) + fine(ii,jj+1,0,10+fcomp)+fine(ii+1,jj,0,10+fcomp) + fine(ii+1,jj+1,0,8+fcomp));
+                    
+                    crse(i,j,0,4+ccomp) = 0;
+                    crse(i,j,0,5+ccomp) = 0;
+                    crse(i,j,0,6+ccomp) = 0;
+                    crse(i,j,0,7+ccomp) = 0;
                 
-                if(n < 4)
-                {
-                    crse(i,j,0,0+ccomp) = fine(i*facx,jj,0,0+fcomp)*fine(i*facx+1,jj,0,0+fcomp) - fine(i*facx,jj,0,1+fcomp)*fine(i*facx+1,jj,0,1+fcomp);
-                    crse(i,j,0,1+ccomp) = fine(i*facx,jj,0,0+fcomp)*fine(i*facx+1,jj,0,1+fcomp) + fine(i*facx,jj,0,1+fcomp)*fine(i*facx+1,jj,0,0+fcomp);
-                    crse(i,j,0,2+ccomp) = fine(i*facx,jj,0,2+fcomp)*fine(i*facx,jj+1,0,2+fcomp) - fine(i*facx,jj,0,3+fcomp)*fine(i*facx,jj+1,0,3+fcomp);
-                    crse(i,j,0,3+ccomp) = fine(i*facx,jj,0,2+fcomp)*fine(i*facx+1,jj+1,0,3+fcomp) + fine(i*facx,jj,0,3+fcomp)*fine(i*facx,jj+1,0,2+fcomp);
-                }
-                else if (n == Idx::theta_0 || n == Idx::theta_1)
-                {
-                    //crse(i,j,0,Idx::theta_0+ccomp) = fine(i*facx,jj,0,Idx::theta_0+fcomp) + fine(i*facx+1,jj,0,Idx::theta_0+fcomp);
-                    //crse(i,j,0,Idx::theta_1+ccomp) = fine(i*facx,jj,0,Idx::theta_1+fcomp) + fine(i*facx,jj+1,0,Idx::theta_1+fcomp);
-                }
-                else if (n == Idx::P_0 || n == Idx::P_1)
-                {
-                    crse(i,j,0,Idx::P_0+ccomp) = fine(i*facx,jj,0,Idx::P_0+fcomp) + fine(i*facx+1,jj,0,Idx::P_0+fcomp) + fine(i*facx,jj+1,0,Idx::P_0+fcomp) + fine(i*facx+1,jj+1,0,Idx::P_0+fcomp);
-                    crse(i,j,0,Idx::P_1+ccomp) = fine(i*facx,jj,0,Idx::P_1+fcomp) + fine(i*facx,jj+1,0,Idx::P_1+fcomp) + fine(i*facx + 1,jj,0,Idx::P_1+fcomp) + fine(i*facx + 1,jj+1,0,Idx::P_1+fcomp);
-                }
-                //else
-                    //crse(i,j,0,n+ccomp) = fine(i*facx,jj,0,n+fcomp);
             }
-        }
-    }
+        }    
 }
 /*
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE

@@ -10,10 +10,19 @@ inline
 amrex::Real
 sum_action_gauge(const int i, const int j, const int k, 
         amrex::Array4<amrex::Real> const& state_fab,
+        const amrex::GeometryData& geom,
         amrex::Real beta) 
 {
+        
+        const auto domain_xlo = geom.ProbLo(); 
+        
+        amrex::Real x0 = (i + 0.5)*geom.CellSize(0) + domain_xlo[0]; 
+        amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1];
     
-        /*amrex::Real U1_r = state_fab(i, j, k, Idx::U_0_Real);
+        amrex::Real dx0 = geom.CellSize(0);
+        amrex::Real dx1 = geom.CellSize(1);
+    
+        amrex::Real U1_r = state_fab(i, j, k, Idx::U_0_Real);
         amrex::Real U1_i = state_fab(i, j, k, Idx::U_0_Imaginary);
         
         amrex::Real U2_r = state_fab(i+1, j, k, Idx::U_1_Real);
@@ -23,19 +32,19 @@ sum_action_gauge(const int i, const int j, const int k,
         amrex::Real U3_i = -state_fab(i, j+1, k, Idx::U_0_Imaginary);
         
         amrex::Real U4_r = state_fab(i, j, k, Idx::U_1_Real);
-        amrex::Real U4_i = -state_fab(i, j, k, Idx::U_1_Imaginary);*/
+        amrex::Real U4_i = -state_fab(i, j, k, Idx::U_1_Imaginary);
     
-        amrex::Real U1_r = std::cos(state_fab(i, j, k, Idx::theta_0));
-        amrex::Real U1_i = std::sin(state_fab(i, j, k, Idx::theta_0));
+        /*amrex::Real U1_r = std::cos(state_fab(i, j, k, Idx::Theta_0));
+        amrex::Real U1_i = std::sin(state_fab(i, j, k, Idx::Theta_0));
         
-        amrex::Real U2_r = std::cos(state_fab(i+1, j, k, Idx::theta_1));
-        amrex::Real U2_i = std::sin(state_fab(i+1, j, k, Idx::theta_1));
+        amrex::Real U2_r = std::cos(state_fab(i+1, j, k, Idx::Theta_1));
+        amrex::Real U2_i = std::sin(state_fab(i+1, j, k, Idx::Theta_1));
         
-        amrex::Real U3_r = std::cos(state_fab(i, j+1, k, Idx::theta_0));
-        amrex::Real U3_i = -std::sin(state_fab(i, j+1, k, Idx::theta_0));
+        amrex::Real U3_r = std::cos(state_fab(i, j+1, k, Idx::Theta_0));
+        amrex::Real U3_i = -std::sin(state_fab(i, j+1, k, Idx::Theta_0));
         
-        amrex::Real U4_r = std::cos(state_fab(i, j, k, Idx::theta_1));
-        amrex::Real U4_i = -std::sin(state_fab(i, j, k, Idx::theta_1));
+        amrex::Real U4_r = std::cos(state_fab(i, j, k, Idx::Theta_1));
+        amrex::Real U4_i = -std::sin(state_fab(i, j, k, Idx::Theta_1));*/
     
     
         
@@ -52,11 +61,19 @@ AMREX_GPU_DEVICE
 inline 
 amrex::Real
 sum_action_mom(const int i, const int j, const int k, 
-        amrex::Array4<amrex::Real> const& state_fab) 
+        amrex::Array4<amrex::Real> const& state_fab,
+        const amrex::GeometryData& geom) 
 {
+        const auto domain_xlo = geom.ProbLo(); 
         
-        amrex::Real P_0 = state_fab(i, j, k, Idx::P_0);
-        amrex::Real P_1 = state_fab(i, j, k, Idx::P_1);
+        amrex::Real x0 = (i + 0.5)*geom.CellSize(0) + domain_xlo[0]; 
+        amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1];
+    
+        amrex::Real Pi_0 = state_fab(i, j, k, Idx::Pi_0);
+        amrex::Real Pi_1 = state_fab(i, j, k, Idx::Pi_1);
+        
+        amrex::Real P_0 = Pi_0*geom.CellSize(0);
+        amrex::Real P_1 = Pi_1*geom.CellSize(1);
 
         amrex::Real delta_action = 0.5*P_0*P_0 + 0.5*P_1*P_1;
             
