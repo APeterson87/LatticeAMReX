@@ -10,7 +10,7 @@ inline
 void 
 state_init(int i, int j, int k, 
         amrex::Array4<amrex::Real> const& state_fab,
-        amrex::Real time, int lev, const amrex::GeometryData& geom) noexcept 
+        amrex::Real cur_time, int lev, const amrex::GeometryData& geom) noexcept 
 {
         const auto domain_xlo = geom.ProbLo(); 
         
@@ -20,8 +20,11 @@ state_init(int i, int j, int k,
         amrex::Real dx0 = geom.CellSize(0);
         amrex::Real dx1 = geom.CellSize(1);
         
-        amrex::Real Theta_0 =  0; //M_PI/4*(amrex::Random()-0.5); //0.1*std::sin(2*M_PI*(x0)/(128)); //0.1*std::exp(-(x0*x0 + x1*x1)/100);
-        amrex::Real Theta_1 =  0; //M_PI/4*(amrex::Random()-0.5); //0.1*std::sin(2*M_PI*(x0)/(128)); //0.1*std::exp(-(x0*x0 + x1*x1)/100);
+        srand (static_cast <unsigned> (time(0)));
+        double r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+        
+        amrex::Real Theta_0 =  M_PI/4*(r-0.5); //0.1*std::sin(2*M_PI*(x0)/(128)); //0.1*std::exp(-(x0*x0 + x1*x1)/100);
+        amrex::Real Theta_1 =  M_PI/4*(r-0.5); //0.1*std::sin(2*M_PI*(x0)/(128)); //0.1*std::exp(-(x0*x0 + x1*x1)/100);
         
         amrex::Real Pi_0 = amrex::RandomNormal(0,1.0); //-0.1*2*M_PI/64*std::sin(2*M_PI*(x0)/(128)); // -0.1*std::exp(-(x0*x0 + x1*x1)/100); 
         amrex::Real Pi_1 = amrex::RandomNormal(0,1.0); //-0.1*2*M_PI/64*std::sin(2*M_PI*(x0)/(128)); //-0.1*std::exp(-(x0*x0 + x1*x1)/100);
