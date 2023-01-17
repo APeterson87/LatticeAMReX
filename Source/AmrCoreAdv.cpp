@@ -240,7 +240,9 @@ AmrCoreAdv::Evolve ()
         amrex::Print() << "Exp(-deltaH/T) = " << std::exp(-(HTotalLev-HTotalcurrentLev)/Temp_T) << std::endl;
         amrex::Print() << "deltaHLev = " << HTotalLev - HTotalcurrentLev << std::endl;
         
-        if(r_loc > std::exp(-(HTotalLev-HTotalcurrentLev)/Temp_T) && step >= Param.therm_steps)
+        bool is_fractured = (cur_time >= 500 && cur_time <= 600); 
+        
+        if(r_loc > std::exp(-(HTotalLev-HTotalcurrentLev)/Temp_T) && step >= Param.therm_steps && !is_fractured)
         {
             for (int level = 0; level <= finest_level; ++level) {
                 MultiFab::Copy(grid_new[level], grid_hold[level], Idx::U_0_Real, Idx::U_0_Real, 6, grid_new[level].nGrow()); 
@@ -272,7 +274,7 @@ AmrCoreAdv::Evolve ()
         MultiFab U_mf(ba_lev, dm_lev, 4, grid_new[1].nGrow());
         MultiFab::Copy(U_mf, grid_new[1], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[1].nGrow());
             
-        Real InstantonNumber = meas_TopCharge(U_mf, lev, cur_time, geom[1], Param);
+        Real InstantonNumber = meas_TopCharge(U_mf, 1, cur_time, geom[1], Param);
         TopCharge << (int)std::round(InstantonNumber) << std::endl; 
         
         MultiFab::Copy(U_mf, grid_new[1], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[1].nGrow());
