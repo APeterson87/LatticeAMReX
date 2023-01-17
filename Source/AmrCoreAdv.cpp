@@ -279,6 +279,7 @@ AmrCoreAdv::Evolve ()
         TopCharge << (int)std::round(InstantonNumber) << std::endl;
 	
 	// Collect TC density data
+	// Smear here
 	update_State_topChargeDensity(grid_new, cur_time, geom, Param);
 
 	// Needed? 
@@ -2349,18 +2350,15 @@ void AmrCoreAdv::smear_gauge (MultiFab& smearedU_mf, MultiFab& U_mf, int lev, co
 Real AmrCoreAdv::meas_TopCharge (MultiFab& U_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param)
 {
     
-    //auto& nodal_mask = grid_msk[lev];
-    
-    //const BoxArray& ba = U_mf.boxArray();
+    //auto& nodal_mask = grid_msk[lev];    
+    const BoxArray& ba = U_mf.boxArray();
     //BoxArray nba = ba;
-    //nba.surroundingNodes();
+    //nba.surroundingNodes();    
+    const DistributionMapping& dm = U_mf.DistributionMap();
     
-    //const DistributionMapping& dm = U_mf.DistributionMap();
-    
-    //MultiFab* smearedU_mf = new MultiFab;
-    //smearedU_mf -> define(nba, dm, 4, NUM_GHOST_CELLS);
-    
-    //smear_gauge(*smearedU_mf, U_mf, lev, time, Param);
+    MultiFab* smearedU_mf = new MultiFab;
+    smearedU_mf -> define(ba, dm, 4, NUM_GHOST_CELLS);    
+    smear_gauge(*smearedU_mf, U_mf, lev, time, Param);
     
     ReduceOps<ReduceOpSum> reduce_operations;
     ReduceData<Real> reduce_data(reduce_operations);
@@ -2376,7 +2374,8 @@ Real AmrCoreAdv::meas_TopCharge (MultiFab& U_mf, int lev, const amrex::Real time
     //bx.enclosedCells();
     Dim3 hi = ubound(bx);
 
-    const auto& smeared_fab = U_mf.array(mfi);
+    //const auto& smeared_fab = U_mf.array(mfi);
+    const auto& smeared_fab = smearedU_mf->array(mfi);
     //const auto& mask_arr = nodal_mask->array(mfi);
 
     // For each grid, loop over all the valid points
@@ -2398,7 +2397,7 @@ Real AmrCoreAdv::meas_TopCharge (MultiFab& U_mf, int lev, const amrex::Real time
     ParallelDescriptor::ReduceRealSum(amrex::get<0>(reduced_values));
     Real TopCharge = amrex::get<0>(reduced_values);
     
-    //delete smearedU_mf;
+    delete smearedU_mf;
     
     return TopCharge/(2.0*M_PI);
 }

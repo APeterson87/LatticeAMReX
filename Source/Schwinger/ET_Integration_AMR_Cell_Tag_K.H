@@ -34,8 +34,8 @@ state_is_tagged(int i, int j, int k,
         
         //return ((x0-x0c)*(x0-x0c) + (x1-x1c)*(x1-x1c) > 1024) || (time < 500.0 || time > 600.0);
         
-        return (!((x0 >= -8 && x0 < 8) && (x1 >= -8 && x1 < 8))) || (time < 500.0 || time > 600.0);
-        
+        //return (!((x0 >= -8 && x0 < 8) && (x1 >= -8 && x1 < 8))) || (time < 500.0 || time > 600.0);
+        return true;
         
         //(time < 100 || time > 200) || (x1 < -35 || x1 > 35 || x0 < -35 || x0 > 35);
         
