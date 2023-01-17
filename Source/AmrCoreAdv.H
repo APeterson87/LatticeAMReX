@@ -216,6 +216,10 @@ private:
     
     void update_gauge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param, amrex::Real dtau);
     void update_action (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
+    
+    void update_topChargeDensity (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
+    void update_State_topChargeDensity (amrex::Vector<amrex::MultiFab>& state, Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param);
+    
     void set_gauge_from_theta (MultiFab& state_mf, int lev);
     void ResetDDinvPhi(amrex::MultiFab& state_mf);
 

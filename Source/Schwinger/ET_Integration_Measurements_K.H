@@ -64,4 +64,15 @@ state_TopCharge(const int i, const int j, const int k,
     
         return topC;
 }
+
+AMREX_GPU_DEVICE 
+inline 
+void 
+state_topChargeDensity(int i, int j, int k, 
+        amrex::Array4<amrex::Real> const& state_fab,
+        const amrex::GeometryData& geom,
+        amrex::Real beta) noexcept 
+{
+        state_fab(i, j, k, Idx::TopChargeDensity) = 0;
+}
 #endif

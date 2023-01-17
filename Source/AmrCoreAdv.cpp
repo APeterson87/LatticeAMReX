@@ -1787,6 +1787,41 @@ void AmrCoreAdv::update_action (MultiFab& state_mf, int lev, const amrex::Real t
   
 }
 
+void AmrCoreAdv::update_topChargeDensity (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param)
+{
+    //auto& nodal_mask = grid_msk[lev];
+    const auto dx = geom.CellSizeArray();
+    int ncomp = state_mf.nComp();
+    
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+  for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
+  {
+    const Box& bx = mfi.tilebox();
+    const auto ncomp = state_mf.nComp();
+
+    const auto& state_fab = state_mf.array(mfi);
+    //const auto& mask_arr = nodal_mask -> array(mfi);
+    
+    // For each grid, loop over all the valid points
+    amrex::ParallelFor(bx,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+            state_topChargeDensity(i, j, k, state_fab, geom.data(), Param.beta_lev[0]);
+    });
+  }
+   
+}
+
+void AmrCoreAdv::update_State_topChargeDensity (amrex::Vector<amrex::MultiFab>& state, Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param)
+{
+    for(int lev = finest_level; lev >= 0; lev--)
+    {
+        update_topChargeDensity (state[lev], lev, time, geom[lev], Param);
+    }
+}
+
 void AmrCoreAdv::show_momentum (MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau)
 {
 

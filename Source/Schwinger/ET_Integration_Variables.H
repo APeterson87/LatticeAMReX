@@ -8,4 +8,5 @@ names = {"U_0_Real",
          "Phi_0_Imaginary",
          "Phi_1_Real",
          "Phi_1_Imaginary",
-         "ActionDensity"};
+         "ActionDensity",
+         "TopChargeDensity"};

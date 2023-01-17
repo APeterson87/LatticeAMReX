@@ -16,6 +16,7 @@ namespace Idx {
                          Phi_1_Real, 
                          Phi_1_Imaginary,
                          ActionDensity,
+                         TopChargeDensity,
                          NumScalars}; 
 };
 
