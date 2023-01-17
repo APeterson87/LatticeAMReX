@@ -69,10 +69,17 @@ AMREX_GPU_DEVICE
 inline 
 void 
 state_topChargeDensity(int i, int j, int k, 
-        amrex::Array4<amrex::Real> const& state_fab,
-        const amrex::GeometryData& geom,
-        amrex::Real beta) noexcept 
+		       amrex::Array4<amrex::Real> const &state_fab,
+		       const amrex::GeometryData& geom) noexcept 
 {
-        state_fab(i, j, k, Idx::TopChargeDensity) = 0;
+  std::complex<double> Sm_0_00 = std::complex<double>(state_fab(i, j, k, cIdx::Real_0), state_fab(i, j, k, cIdx::Imaginary_0));
+  std::complex<double> Sm_1_p0 = std::complex<double>(state_fab(i+1, j, k, cIdx::Real_1), state_fab(i+1, j, k, cIdx::Imaginary_1));
+  std::complex<double> Sm_0_0p = std::complex<double>(state_fab(i, j+1, k, cIdx::Real_0), state_fab(i, j+1, k, cIdx::Imaginary_0));
+  std::complex<double> Sm_1_00 = std::complex<double>(state_fab(i, j, k, cIdx::Real_1), state_fab(i, j, k, cIdx::Imaginary_1));
+  
+  //amrex::Real w = std::arg(Sm_0_00)+std::arg(Sm_1_p0)+std::arg(std::conj(Sm_0_0p))+std::arg(std::conj(Sm_1_00));
+  amrex::Real w = std::arg(Sm_0_00*Sm_1_p0*std::conj(Sm_0_0p)*std::conj(Sm_1_00));
+  
+  state_fab(i, j, k, Idx::TopChargeDensity) = w;
 }
 #endif

@@ -273,11 +273,16 @@ AmrCoreAdv::Evolve ()
         const DistributionMapping& dm_lev = grid_new[1].DistributionMap();
         MultiFab U_mf(ba_lev, dm_lev, 4, grid_new[1].nGrow());
         MultiFab::Copy(U_mf, grid_new[1], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[1].nGrow());
-            
+
+	// Measure the TC integer
         Real InstantonNumber = meas_TopCharge(U_mf, 1, cur_time, geom[1], Param);
-        TopCharge << (int)std::round(InstantonNumber) << std::endl; 
-        
-        MultiFab::Copy(U_mf, grid_new[1], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[1].nGrow());
+        TopCharge << (int)std::round(InstantonNumber) << std::endl;
+	
+	// Collect TC density data
+	update_State_topChargeDensity(grid_new, cur_time, geom, Param);
+
+	// Needed? 
+        //MultiFab::Copy(U_mf, grid_new[1], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[1].nGrow());
         
         amrex::Print() << "Coarse STEP " << step+1 << " ends." << " TIME = " << cur_time
                        << " DT = " << dt[0]  << std::endl;
@@ -288,13 +293,13 @@ AmrCoreAdv::Evolve ()
         }
 
         if (plot_int > 0 && (step+1) % plot_int == 0) {
-            last_plot_file_step = step+1;
-            WritePlotFile();
+	  last_plot_file_step = step+1;
+	  WritePlotFile();
         }
 
         if (chk_int > 0 && (step+1) % chk_int == 0) {
-            last_chk_file_step = step+1;
-            WriteCheckpointFile();
+	  last_chk_file_step = step+1;
+	  WriteCheckpointFile();
         }
 
         // Write a diagnostic file?
@@ -1808,7 +1813,7 @@ void AmrCoreAdv::update_topChargeDensity (MultiFab& state_mf, int lev, const amr
     amrex::ParallelFor(bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-            state_topChargeDensity(i, j, k, state_fab, geom.data(), Param.beta_lev[0]);
+            state_topChargeDensity(i, j, k, state_fab, geom.data());
     });
   }
    
