@@ -7,11 +7,11 @@ stop_time = 2000000.0
 num_hmc_substeps = 25
 hmc_tau = 0.0
  
-coupling_beta = 1.0
+coupling_beta = 10.0
 mass_0 = 0.1
 wilson_r = 1.0
 Temp_T = 1.0
-coupling_beta_lev = 1.0 1.0
+coupling_beta_lev = 4.0 4.0
 sigma_lev = 1.0 1.0
 temp_lev = 1.0 1.0
 hmc_tau_lev = 1.0 1.0
