@@ -31,9 +31,7 @@ AmrCoreAdv::AmrCoreAdv ()
     dt.resize(nlevs_max, 1.e100);
 
     grid_new.resize(nlevs_max);
-    //grid_old.resize(nlevs_max);
     grid_hold.resize(nlevs_max);
-    //grid_msk.resize(nlevs_max);
     
     //integrator.resize(nlevs_max);
 
@@ -200,7 +198,7 @@ AmrCoreAdv::Evolve ()
         amrex::Print() << "Exp(-deltaH/T) = " << std::exp(-(HTotalLev-HTotalcurrentLev)/Temp_T) << std::endl;
         amrex::Print() << "deltaHLev = " << HTotalLev - HTotalcurrentLev << std::endl;
         
-        bool is_fractured = (cur_time >= 500 && cur_time <= 600); 
+        bool is_fractured = false; //Check if there are uncovered cells on the lowest level?
         
         if(r_loc > std::exp(-(HTotalLev-HTotalcurrentLev)/Temp_T) && step >= Param.therm_steps && !is_fractured)
         {
