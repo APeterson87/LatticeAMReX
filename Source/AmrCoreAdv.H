@@ -212,8 +212,6 @@ private:
     
     void update_momentum (MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
     
-    void show_momentum (MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
-    
     void update_gauge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param, amrex::Real dtau);
     void update_action (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
     
@@ -246,8 +244,6 @@ private:
     amrex::Real Action_Fermi(amrex::MultiFab& state_mf, amrex::MultiFab& aux_mf, int lev);
     //amrex::Real Action_Fermi_From_Chi (MultiFab& state_mf);
     
-    Real Test_Sum (MultiFab& state_mf, int lev);
-    Real Test_Sum_Lev (amrex::Vector<amrex::MultiFab>& state, int lev, Parameters Param);
     
     Real Total_Action_Lev (amrex::Vector<amrex::MultiFab>& state, const amrex::Vector<amrex::Geometry>& geom, Parameters Param, int high_lev);
     Real Total_Gauge_Action_Lev(amrex::Vector<amrex::MultiFab>& state, const amrex::Vector<amrex::Geometry>& geom, Parameters Param, int high_lev);
@@ -281,12 +277,10 @@ private:
     // array of multifabs to store the solution at each level of refinement
     // after advancing a level we use "swap".
     amrex::Vector<amrex::MultiFab> grid_new;
-    //amrex::Vector<amrex::MultiFab> grid_old;
     amrex::Vector<amrex::MultiFab> grid_hold;
-    amrex::Vector<std::unique_ptr<amrex::iMultiFab>> grid_msk;
 
     // array of time integrator objects at each level of refinement
-    amrex::Vector<std::unique_ptr<TimeIntegrator<MultiFab> > > integrator;
+    //amrex::Vector<std::unique_ptr<TimeIntegrator<MultiFab> > > integrator;
 
     // BCRec is essentially a 2*DIM integer array storing the physical boundary
     // condition types at the lo/hi walls in each direction
