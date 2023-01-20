@@ -60,37 +60,6 @@ state_update_momentum(int i, int j, int k,
         amrex::Real U_0_m0_r = state_fab(i-1, j, k, Idx::U_0_Real);
         amrex::Real U_0_m0_i = state_fab(i-1, j, k, Idx::U_0_Imaginary);
         
-        /*
-        amrex::Real U_0_00_r = std::cos(state_fab(i, j, k, Idx::Theta_0));
-        amrex::Real U_0_00_i = std::sin(state_fab(i, j, k, Idx::Theta_0));
-        
-        amrex::Real U_1_p0_r = std::cos(state_fab(i+1, j, k, Idx::Theta_1));
-        amrex::Real U_1_p0_i = std::sin(state_fab(i+1, j, k, Idx::Theta_1));
-        
-        amrex::Real U_0_0p_r = std::cos(state_fab(i, j+1, k, Idx::Theta_0));
-        amrex::Real U_0_0p_i = std::sin(state_fab(i, j+1, k, Idx::Theta_0));
-        
-        amrex::Real U_1_00_r = std::cos(state_fab(i, j, k, Idx::Theta_1));
-        amrex::Real U_1_00_i = std::sin(state_fab(i, j, k, Idx::Theta_1));
-        
-        amrex::Real U_0_0m_r = std::cos(state_fab(i, j-1, k, Idx::Theta_0));
-        amrex::Real U_0_0m_i = std::sin(state_fab(i, j-1, k, Idx::Theta_0));
-        
-        amrex::Real U_1_pm_r = std::cos(state_fab(i+1, j-1, k, Idx::Theta_1));
-        amrex::Real U_1_pm_i = std::sin(state_fab(i+1, j-1, k, Idx::Theta_1));
-        
-        amrex::Real U_1_0m_r = std::cos(state_fab(i, j-1, k, Idx::Theta_1));
-        amrex::Real U_1_0m_i = std::sin(state_fab(i, j-1, k, Idx::Theta_1));
-        
-        amrex::Real U_0_mp_r = std::cos(state_fab(i-1, j+1, k, Idx::Theta_0));
-        amrex::Real U_0_mp_i = std::sin(state_fab(i-1, j+1, k, Idx::Theta_0));
-        
-        amrex::Real U_1_m0_r = std::cos(state_fab(i-1, j, k, Idx::Theta_1));
-        amrex::Real U_1_m0_i = std::sin(state_fab(i-1, j, k, Idx::Theta_1));
-        
-        amrex::Real U_0_m0_r = std::cos(state_fab(i-1, j, k, Idx::Theta_0));
-        amrex::Real U_0_m0_i = std::sin(state_fab(i-1, j, k, Idx::Theta_0));
-        */
         
         amrex::Real Plaq_0_im = -U_0_00_i*U_0_0p_i*U_1_00_i*U_1_p0_r + U_0_00_i*U_0_0p_i*U_1_00_r*U_1_p0_i + U_0_00_i*U_0_0p_r*U_1_00_i*U_1_p0_i + U_0_00_i*U_0_0p_r*U_1_00_r*U_1_p0_r - U_0_00_r*U_0_0p_i*U_1_00_i*U_1_p0_i - U_0_00_r*U_0_0p_i*U_1_00_r*U_1_p0_r - U_0_00_r*U_0_0p_r*U_1_00_i*U_1_p0_r + U_0_00_r*U_0_0p_r*U_1_00_r*U_1_p0_i;
         
@@ -108,21 +77,6 @@ state_update_momentum(int i, int j, int k,
         state_fab(i, j, k, Idx::Pi_0) += -(F_0-fD_0)*dtau/(dx0*dx1); //dx0; //(dx1*dx0);
         
         state_fab(i, j, k, Idx::Pi_1) += -(F_1-fD_1)*dtau/(dx0*dx1); //dx1; //(dx0*dx1);
-        /*amrex::Real ddA_00 = (state_fab(i+1, j, k, Idx::A_0)-2*state_fab(i, j, k, Idx::A_0)+state_fab(i-1, j, k, Idx::A_0))/(dx0*dx0);
-        amrex::Real ddA_01 = (state_fab(i, j+1, k, Idx::A_0)-2*state_fab(i, j, k, Idx::A_0)+state_fab(i, j-1, k, Idx::A_0))/(dx1*dx1);
-        
-        amrex::Real ddA_10 = (state_fab(i+1, j, k, Idx::A_1)-2*state_fab(i, j, k, Idx::A_1)+state_fab(i-1, j, k, Idx::A_1))/(dx0*dx0);
-        amrex::Real ddA_11 = (state_fab(i, j+1, k, Idx::A_1)-2*state_fab(i, j, k, Idx::A_1)+state_fab(i, j-1, k, Idx::A_1))/(dx1*dx1);
-        
-        state_fab(i, j, k, Idx::Pi_0
-        ) += beta*dtau*(ddA_00 + ddA_01);
-        state_fab(i, j, k, Idx::Pi_1) += beta*dtau*(ddA_10 + ddA_11);*/
-        
-        
-        
-        //state_fab(i, j, k, Idx::P_0) += -(F_0-fD_0)*dtau;
-        
-        //state_fab(i, j, k, Idx::P_1) += -(F_1-fD_1)*dtau;
         
 
 }
@@ -144,39 +98,16 @@ state_update_gauge(int i, int j, int k,
         
         amrex::Real dx0 = geom.CellSize(0);
         amrex::Real dx1 = geom.CellSize(1);
-
-        //amrex::Real Theta_0 = state_fab(i, j, k, Idx::Theta_0);
-        //amrex::Real Theta_1 = state_fab(i, j, k, Idx::Theta_1);
         
         amrex::Real Pi_0 = state_fab(i, j, k, Idx::Pi_0);
         amrex::Real Pi_1 = state_fab(i, j, k, Idx::Pi_1);
-        /*
-        state_fab(i, j, k, Idx::Theta_0) = Theta_0 + dtau*Pi_0;
-        state_fab(i, j, k, Idx::Theta_1) = Theta_1 + dtau*Pi_1;
-        */
 
-        //amrex::Real theta_0 = state_fab(i, j, k, Idx::theta_0);
-        //amrex::Real theta_1 = state_fab(i, j, k, Idx::theta_1);
-        
-        /*amrex::Real U_0_Real = std::cos(Theta_0);
-        amrex::Real U_0_Imaginary = std::sin(Theta_0);
-        
-        amrex::Real U_1_Real = std::cos(Theta_1);
-        amrex::Real U_1_Imaginary = std::sin(Theta_1);*/
         
         amrex::Real U_0_Real = state_fab(i, j, k, Idx::U_0_Real);
         amrex::Real U_0_Imaginary = state_fab(i, j, k, Idx::U_0_Imaginary);
         
         amrex::Real U_1_Real = state_fab(i, j, k, Idx::U_1_Real);
         amrex::Real U_1_Imaginary = state_fab(i, j, k, Idx::U_1_Imaginary);
-        
-        //amrex::Real P_0 = state_fab(i, j, k, Idx::P_0);
-        //amrex::Real P_1 = state_fab(i, j, k, Idx::P_1);
-        
-        
-        
-        //state_fab(i, j, k, Idx::theta_0) = theta_0 + dtau*P_0;
-        //state_fab(i, j, k, Idx::theta_1) = theta_1 + dtau*P_1;
         
         state_fab(i, j, k, Idx::U_0_Real) = std::cos(dtau*Pi_0*dx0)*U_0_Real - std::sin(dtau*Pi_0*dx0)*U_0_Imaginary;
         state_fab(i, j, k, Idx::U_0_Imaginary) = std::sin(dtau*Pi_0*dx0)*U_0_Real + std::cos(dtau*Pi_0*dx0)*U_0_Imaginary;

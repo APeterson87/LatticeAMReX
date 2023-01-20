@@ -45,7 +45,7 @@ namespace InitIdx {
 };
 
 namespace Diag { 
-         enum DiagnosticIndexes {ActionDensity, AbsU_0_Re, AbsU_1_Re, NumScalars}; 
+         enum DiagnosticIndexes {NumScalars}; 
 };
 
 #define NUM_GHOST_CELLS 1

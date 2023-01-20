@@ -22,14 +22,9 @@ state_Perturbation(int i, int j, int k,
         amrex::Real Pi_0 = amrex::RandomNormal(0, sigma_lev);
         amrex::Real Pi_1 = amrex::RandomNormal(0, sigma_lev);
         
-        //amrex::Real P_0 = Pi_0*geom.CellSize(0);
-        //amrex::Real P_1 = Pi_1*geom.CellSize(1);
-        
         state_fab(i, j, k, Idx::Pi_0) = Pi_0;
         state_fab(i, j, k, Idx::Pi_1) = Pi_1; 
-        
-        //state_fab(i, j, k, Idx::P_0) = P_0;
-        //state_fab(i, j, k, Idx::P_1) = P_1;        
+              
 }
 
 AMREX_GPU_DEVICE 

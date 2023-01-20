@@ -48,19 +48,6 @@ state_TopCharge(const int i, const int j, const int k,
         //amrex::Real w = std::arg(Sm_0_00)+std::arg(Sm_1_p0)+std::arg(std::conj(Sm_0_0p))+std::arg(std::conj(Sm_1_00));
         amrex::Real w = std::arg(Sm_0_00*Sm_1_p0*std::conj(Sm_0_0p)*std::conj(Sm_1_00));
         amrex::Real topC = w;
-        /*
-        if(i == 16 && j == 16)
-        {
-            amrex::Print() << "Top C " <<  w << std::endl;
-            amrex::Print() << "Top C " <<  std::arg(Sm_0_00) << std::endl;
-            amrex::Print() << "Top C " <<  std::arg(Sm_1_p0) << std::endl;
-            amrex::Print() << "Top C " <<  std::arg(Sm_0_0p) << std::endl;
-            amrex::Print() << "Top C " <<  std::arg(Sm_1_00) << std::endl;
-        }
-    
-        if(topC != 0)
-            amrex::Print() << i << ' ' << j << ' ' << topC/(2*M_PI) <<  std::endl;
-        */
     
         return topC;
 }

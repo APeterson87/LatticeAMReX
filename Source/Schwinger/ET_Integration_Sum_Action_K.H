@@ -32,20 +32,7 @@ sum_action_gauge(const int i, const int j, const int k,
         amrex::Real U3_i = -state_fab(i, j+1, k, Idx::U_0_Imaginary);
         
         amrex::Real U4_r = state_fab(i, j, k, Idx::U_1_Real);
-        amrex::Real U4_i = -state_fab(i, j, k, Idx::U_1_Imaginary);
-    
-        /*amrex::Real U1_r = std::cos(state_fab(i, j, k, Idx::Theta_0));
-        amrex::Real U1_i = std::sin(state_fab(i, j, k, Idx::Theta_0));
-        
-        amrex::Real U2_r = std::cos(state_fab(i+1, j, k, Idx::Theta_1));
-        amrex::Real U2_i = std::sin(state_fab(i+1, j, k, Idx::Theta_1));
-        
-        amrex::Real U3_r = std::cos(state_fab(i, j+1, k, Idx::Theta_0));
-        amrex::Real U3_i = -std::sin(state_fab(i, j+1, k, Idx::Theta_0));
-        
-        amrex::Real U4_r = std::cos(state_fab(i, j, k, Idx::Theta_1));
-        amrex::Real U4_i = -std::sin(state_fab(i, j, k, Idx::Theta_1));*/
-    
+        amrex::Real U4_i = -state_fab(i, j, k, Idx::U_1_Imaginary);    
     
         
         amrex::Real plaq_re = U1_i*U2_i*U3_i*U4_i - U1_i*U2_i*U3_r*U4_r - U1_i*U2_r*U3_i*U4_r - U1_i*U2_r*U3_r*U4_i - U1_r*U2_i*U3_i*U4_r - U1_r*U2_i*U3_r*U4_i - U1_r*U2_r*U3_i*U4_i + U1_r*U2_r*U3_r*U4_r;

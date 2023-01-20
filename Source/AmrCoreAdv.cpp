@@ -198,7 +198,7 @@ AmrCoreAdv::Evolve ()
         amrex::Print() << "Exp(-deltaH/T) = " << std::exp(-(HTotalLev-HTotalcurrentLev)/Temp_T) << std::endl;
         amrex::Print() << "deltaHLev = " << HTotalLev - HTotalcurrentLev << std::endl;
         
-        bool is_fractured = false; //Check if there are uncovered cells on the lowest level?
+        bool is_fractured = (cur_time >= 500.0 && cur_time <= 600.0);//Check if there are uncovered cells on the lowest level?
         
         if(r_loc > std::exp(-(HTotalLev-HTotalcurrentLev)/Temp_T) && step >= Param.therm_steps && !is_fractured)
         {
