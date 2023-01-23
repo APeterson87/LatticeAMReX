@@ -4,14 +4,14 @@ num_therm_steps = 100
 starting_measurements_step = 200
 stop_time = 2000000.0
 
-num_hmc_substeps = 25
+num_hmc_substeps = 35
 hmc_tau = 0.0
  
-coupling_beta = 10.0
+coupling_beta = 12.0
 mass_0 = 0.1
 wilson_r = 1.0
 Temp_T = 1.0
-coupling_beta_lev = 8.0 8.0
+coupling_beta_lev = 12.0 12.0
 sigma_lev = 1.0 1.0
 temp_lev = 1.0 1.0
 hmc_tau_lev = 1.0 1.0
@@ -22,8 +22,8 @@ BiCGThresh = 1e-16
 BiCG_Max_Iter = 10000
 Use_BiCG_Stab = 0
 
-APE_iter = 10
-APE_alpha = 0.6
+APE_iter = 1
+APE_alpha = 0.5
 
 measWilsonLoops_Interval = 100
 CheckReversedTrajectoryInterval = 1000
@@ -33,6 +33,9 @@ amr.n_cell = 64 64
 
 geometry.is_periodic = 1 1 
 geometry.coord_sys = 0 
+#geometry.prob_lo = -64.0 -64.0 #-20.9805 -20.9805 -20.9805 
+#geometry.prob_hi = 64.0 64.0 #20.9805 20.9805 20.9805
+
 geometry.prob_lo = -64.0 -64.0 #-20.9805 -20.9805 -20.9805 
 geometry.prob_hi = 64.0 64.0 #20.9805 20.9805 20.9805 
 

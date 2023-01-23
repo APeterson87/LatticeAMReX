@@ -362,6 +362,9 @@ private:
 
     // interpolation type between levels
     int interpolation_type = 0;
+
+    // If the grid has been regridded
+    bool is_regridded = false;
 };
 
 #endif

@@ -230,7 +230,7 @@ AmrCoreAdv::Evolve ()
 
         // Measure the TC integer
         Real InstantonNumber = meas_TopCharge(U_mf, 1, cur_time, geom[1], Param);
-        TopCharge << (int)std::round(InstantonNumber) << std::endl;
+        TopCharge << step << " " << (int)std::round(InstantonNumber) << std::endl;
 
         // Collect TC density data
         // Smear here
@@ -950,6 +950,7 @@ AmrCoreAdv::timeStepRegrid (int lev, Real time, int iteration, Parameters Param)
         {
             if (istep[lev] % regrid_int == 0)
             {
+	      is_regridded = true;
                 // regrid could add newly refine levels (if finest_level < max_level)
                 // so we save the previous finest level index
                 int old_finest = finest_level;
@@ -966,7 +967,9 @@ AmrCoreAdv::timeStepRegrid (int lev, Real time, int iteration, Parameters Param)
                 /*for (int k = old_finest+1; k <= finest_level; ++k) {
                     dt[k] = dt[k-1] / MaxRefRatio(k-1);
                 }*/
-            }
+            } else {
+	      is_regridded = false;
+	    }
         }
     }
     
@@ -1088,8 +1091,13 @@ AmrCoreAdv::WritePlotFile () const
 
     amrex::Print() << "Writing plotfile " << plotfilename << "\n";
 
-    amrex::WriteMultiLevelPlotfile(plotfilename, finest_level+1, mf, varnames,
-                                   Geom(), t_new[0], istep, refRatio());
+    if(is_regridded) {
+      amrex::WriteMultiLevelPlotfile(plotfilename, finest_level+1, mf, varnames,
+				     Geom(), t_new[0], istep, refRatio());
+    } else {
+      amrex::WriteMultiLevelPlotfile(plotfilename, finest_level, mf, varnames,
+				     Geom(), t_new[0], istep, refRatio());
+    }
 }
 
 std::string
@@ -1972,10 +1980,6 @@ void AmrCoreAdv::smear_gauge (MultiFab& smearedU_mf, MultiFab& U_mf, int lev, co
     const BoxArray& ba = U_mf.boxArray();
     const DistributionMapping& dm = U_mf.DistributionMap();
     
-    MultiFab* smearedU_tmp_mf = new MultiFab;
-    smearedU_tmp_mf -> define(ba,dm,4,NUM_GHOST_CELLS);
-    
-    
     //Set smearedU_mf to U_mf
     MultiFab::Copy(smearedU_mf, U_mf, cIdx::Real_0, cIdx::Real_0, 4, NUM_GHOST_CELLS);
     
@@ -1991,16 +1995,16 @@ void AmrCoreAdv::smear_gauge (MultiFab& smearedU_mf, MultiFab& U_mf, int lev, co
     
         const auto& U_fab = U_mf.array(mfi);
         const auto& smeared_fab = smearedU_mf.array(mfi);
-        const auto& smeared_tmp_fab = smearedU_tmp_mf -> array(mfi);
     
         // For each grid, loop over all the valid points
         amrex::ParallelFor(bx,
         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            state_smear_gauge(i, j, k, smeared_fab, smeared_tmp_fab, time, Param.APE_smear_alpha);
+	     state_smear_gauge(i, j, k, smeared_fab, time, Param.APE_smear_alpha);
         });
       }
-        
+
+      /*
       for ( MFIter mfi(smearedU_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
       {
          const Box& bx = mfi.tilebox();
@@ -2015,11 +2019,11 @@ void AmrCoreAdv::smear_gauge (MultiFab& smearedU_mf, MultiFab& U_mf, int lev, co
              state_project_smeared(i, j, k, smeared_fab, smeared_tmp_fab, time);
          });
        }
-        
-    }
-    
-    delete smearedU_tmp_mf;
-  
+      */
+      
+      // Copy smeared_tmp_fab into smeared_tmp_fab
+      //MultiFab::Copy(smearedU_mf, U_mf, cIdx::Real_0, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+    }   
 }
 
 Real AmrCoreAdv::meas_TopCharge (MultiFab& U_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param)

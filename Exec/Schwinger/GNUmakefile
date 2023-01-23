@@ -1,10 +1,10 @@
 # AMREX_HOME defines the directory in which we will find all the AMReX code.
 # If you set AMREX_HOME as an environment variable, this line will be ignored
-AMREX_HOME ?= ~/amrex
+AMREX_HOME ?= ~/amrex_topology/amrex
 ETI_HOME ?= ../..
 
 DEBUG     = FALSE
-USE_MPI   = TRUE
+USE_MPI   = FALSE
 USE_OMP   = FALSE
 
 COMP      = gnu

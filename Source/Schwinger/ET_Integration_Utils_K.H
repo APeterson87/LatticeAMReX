@@ -74,11 +74,9 @@ inline
 void 
 state_smear_gauge(int i, int j, int k, 
         amrex::Array4<amrex::Real> const& smeared_fab,
-        amrex::Array4<amrex::Real> const& smeared_tmp_fab,
-        const amrex::Real time,
+	const amrex::Real time,
         amrex::Real alpha) noexcept 
 {
-
 
         amrex::Real U_0_00_r = smeared_fab(i, j, k, cIdx::Real_0);
         amrex::Real U_0_00_i = smeared_fab(i, j, k, cIdx::Imaginary_0);
@@ -127,11 +125,26 @@ state_smear_gauge(int i, int j, int k,
         std::complex<double> SmU_1_00 = (1.0-alpha)*U_1_00 + alpha/2.0*staple_1;
         
         
-        smeared_tmp_fab(i, j, k, cIdx::Real_0) = std::real(SmU_0_00);
-        smeared_tmp_fab(i, j, k, cIdx::Imaginary_0) = std::imag(SmU_0_00);
-        smeared_tmp_fab(i, j, k, cIdx::Real_1) = std::real(SmU_1_00);
-        smeared_tmp_fab(i, j, k, cIdx::Imaginary_1) = std::imag(SmU_1_00);
+        //smeared_tmp_fab(i, j, k, cIdx::Real_0) = std::real(SmU_0_00);
+        //smeared_tmp_fab(i, j, k, cIdx::Imaginary_0) = std::imag(SmU_0_00);
+        //smeared_tmp_fab(i, j, k, cIdx::Real_1) = std::real(SmU_1_00);
+        //smeared_tmp_fab(i, j, k, cIdx::Imaginary_1) = std::imag(SmU_1_00);
 
+	// Add the projection here
+	amrex::Real SmU_tmp_0_00_Real = std::real(SmU_0_00);
+        amrex::Real SmU_tmp_0_00_Imaginary = std::imag(SmU_0_00);
+        std::complex<double> SmU_tmp_0_00 = std::complex<double>(SmU_tmp_0_00_Real, SmU_tmp_0_00_Imaginary);
+        
+        amrex::Real SmU_tmp_1_00_Real = std::real(SmU_1_00);
+        amrex::Real SmU_tmp_1_00_Imaginary = std::imag(SmU_1_00);
+        std::complex<double> SmU_tmp_1_00 = std::complex<double>(SmU_tmp_1_00_Real, SmU_tmp_1_00_Imaginary);
+        
+        smeared_fab(i, j, k, cIdx::Real_0) = std::real(std::polar(1.0,std::arg(SmU_tmp_0_00)));
+        smeared_fab(i, j, k, cIdx::Imaginary_0) = std::imag(std::polar(1.0,std::arg(SmU_tmp_0_00)));
+        smeared_fab(i, j, k, cIdx::Real_1) = std::real(std::polar(1.0,std::arg(SmU_tmp_1_00)));
+        smeared_fab(i, j, k, cIdx::Imaginary_1) = std::imag(std::polar(1.0,std::arg(SmU_tmp_1_00)));
+
+	
 }
 
 
