@@ -198,7 +198,7 @@ AmrCoreAdv::Evolve ()
         amrex::Print() << "Exp(-deltaH/T) = " << std::exp(-(HTotalLev-HTotalcurrentLev)/Temp_T) << std::endl;
         amrex::Print() << "deltaHLev = " << HTotalLev - HTotalcurrentLev << std::endl;
         
-        bool is_fractured = (cur_time >= 500.0 && cur_time <= 600.0);//Check if there are uncovered cells on the lowest level?
+        bool is_fractured = (cur_time >= time_lower && cur_time <= time_upper);//Check if there are uncovered cells on the lowest level?
         
         if(r_loc > std::exp(-(HTotalLev-HTotalcurrentLev)/Temp_T) && step >= Param.therm_steps && !is_fractured)
         {
@@ -500,7 +500,7 @@ AmrCoreAdv::ErrorEst (int lev, TagBoxArray& tags, Real time, int ngrow)
             amrex::ParallelFor(tilebox,
             [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {          
-                tagarr(i, j, k) = state_is_tagged(i, j, k, lev, state_fab, error_threshold, time, dx, geom.data()) ? tagval : clearval;
+	      tagarr(i, j, k) = state_is_tagged(i, j, k, lev, state_fab, error_threshold, time, time_lower, time_upper, x0_lower, x0_upper, x1_lower, x1_upper, geom.data()) ? tagval : clearval;
             });
         }
     }
@@ -535,7 +535,14 @@ AmrCoreAdv::ReadParameters ()
         pp.get("BiCG_Max_Iter", BiCG_Max_Iter);
         pp.get("Use_BiCG_Stab", Use_BiCG_Stab);
         
-        
+        pp.get("time_lower", time_lower);
+	pp.get("time_upper", time_upper);
+	pp.get("x0_lower", x0_lower);
+	pp.get("x0_upper", x0_upper);
+	pp.get("x1_lower", x1_lower);
+	pp.get("x1_upper", x1_upper);
+
+	
         pp.get("APE_alpha", APE_alpha);
         pp.get("APE_iter", APE_iter);
         

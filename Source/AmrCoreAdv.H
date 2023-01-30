@@ -365,6 +365,15 @@ private:
 
     // If the grid has been regridded
     bool is_regridded = false;
+
+    // tagging criteria
+  amrex::Real time_lower = 500;
+  amrex::Real time_upper = 600;
+  int x0_lower = -8;
+  int x0_upper = 8;
+    int x1_lower = -8;
+    int x1_upper = 8;
+  
 };
 
 #endif

@@ -1,10 +1,10 @@
 # Stopping Criteria
-max_step = 1200
+max_step = 1000
 num_therm_steps = 100
 starting_measurements_step = 200
 stop_time = 2000000.0
 
-num_hmc_substeps = 35
+num_hmc_substeps = 25
 hmc_tau = 0.0
  
 coupling_beta = 12.0
@@ -25,6 +25,24 @@ Use_BiCG_Stab = 0
 APE_iter = 1
 APE_alpha = 0.5
 
+# Refinement Parameteres
+time_lower = 300
+time_upper = 350
+x0_lower = -8
+x0_upper = 8
+x1_lower = -8
+x1_upper = 8
+
+# Ensure time_lower % regrid_int == 0
+amr.regrid_int = 50
+amr.max_level = 1
+amr.max_grid_size = 128 128
+amr.ref_ratio = 2
+amr.n_error_buf = 0
+amr.blocking_factor = 2 2
+amr.grid_eff = 0.999
+
+
 measWilsonLoops_Interval = 100
 CheckReversedTrajectoryInterval = 1000
 
@@ -41,15 +59,6 @@ geometry.prob_hi = 64.0 64.0 #20.9805 20.9805 20.9805
 
 # Turn on verbosity in amr 
 amr.v = 1
-
-# Refinement Parameter0s 
-amr.max_level = 1
-amr.max_grid_size = 128 128
-amr.ref_ratio = 2
-amr.n_error_buf = 0
-amr.blocking_factor = 2 2
-amr.regrid_int = 100
-amr.grid_eff = 0.999
 
 # AMR Interpolation 
 amr.interpolation_type = 0
