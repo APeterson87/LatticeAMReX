@@ -222,15 +222,17 @@ AmrCoreAdv::Evolve ()
         
         ActionLev1 << originalGAction << ' ' << originalMAction << ' ' << originalTotAction << std::endl;
         
-        
-        const BoxArray& ba_lev = grid_new[1].boxArray();    
-        const DistributionMapping& dm_lev = grid_new[1].DistributionMap();
-        MultiFab U_mf(ba_lev, dm_lev, 4, grid_new[1].nGrow());  //Copy gauge part into its own multifab U_mf.
-        MultiFab::Copy(U_mf, grid_new[1], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[1].nGrow());
+        int TC_lev = 1;
+        const BoxArray& ba_lev = grid_new[TC_lev].boxArray();    
+        const DistributionMapping& dm_lev = grid_new[TC_lev].DistributionMap();
+        MultiFab U_mf(ba_lev, dm_lev, 4, grid_new[TC_lev].nGrow());  //Copy gauge part into its own multifab U_mf.
+        MultiFab::Copy(U_mf, grid_new[TC_lev], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[TC_lev].nGrow());
 
         // Measure the TC integer
-        Real InstantonNumber = meas_TopCharge(U_mf, 1, cur_time, geom[1], Param);
-        TopCharge << step << " " << (int)std::round(InstantonNumber) << std::endl;
+        Real InstantonNumberLev = meas_TopCharge(U_mf, TC_lev, cur_time, geom[TC_lev], Param);
+        Real InstantonNumber = meas_Total_TopCharge_Lev(grid_new, cur_time, geom, Param, 1);
+        
+        TopCharge << step << " " << (int)std::round(InstantonNumberLev) << " " << (int)std::round(InstantonNumber) << std::endl;
 
         // Collect TC density data
         // Smear here
@@ -2075,5 +2077,123 @@ Real AmrCoreAdv::meas_TopCharge (MultiFab& U_mf, int lev, const amrex::Real time
     delete smearedU_mf;
     
     return TopCharge/(2.0*M_PI);
+}
+
+Real AmrCoreAdv::meas_TopCharge_Lev (amrex::Vector<amrex::MultiFab>& state, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param)
+{
+    if(lev != finest_level)
+    {
+        auto& state_mf = state[lev];
+        
+        const BoxArray& ba = state_mf.boxArray(); 
+        const DistributionMapping& dm = state_mf.DistributionMap();
+
+        BoxArray fba = state[lev+1].boxArray();
+        const iMultiFab& mask = makeFineMask(state[lev], fba, IntVect(2));  // the last argument is the refinement ratio
+        
+        MultiFab* U_mf = new MultiFab;
+        U_mf -> define(ba, dm, 4, NUM_GHOST_CELLS); 
+        MultiFab::Copy(*U_mf, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+        
+        MultiFab* smearedU_mf = new MultiFab;
+        smearedU_mf -> define(ba, dm, 4, NUM_GHOST_CELLS); 
+        
+        smear_gauge(*smearedU_mf, *U_mf, lev, time, Param);
+
+        ReduceOps<ReduceOpSum> reduce_operations;
+        ReduceData<Real> reduce_data(reduce_operations);
+        using ReduceTuple = typename decltype(reduce_data)::Type;
+        
+        
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+      for ( MFIter mfi(*smearedU_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
+      {
+        const Box& bx = mfi.tilebox();
+        const auto ncomp = state_mf.nComp();
+
+        const auto& smearedU_fab = smearedU_mf -> array(mfi);
+        const auto& fine_mask_arr = mask.array(mfi);
+
+        // For each grid, loop over all the valid points
+        reduce_operations.eval(bx, reduce_data,
+        [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
+        {
+            return (!fine_mask_arr(i, j, k)*state_TopCharge(i,j,k, smearedU_fab));
+        });
+      }
+        ReduceTuple reduced_values = reduce_data.value();
+        // MPI reduction
+        ParallelDescriptor::ReduceRealSum(amrex::get<0>(reduced_values));
+        Real action = amrex::get<0>(reduced_values);
+    
+        
+        delete U_mf;
+        delete smearedU_mf;
+        return action/(2.0*M_PI);
+    }
+    
+    else
+    {
+        auto& state_mf = state[lev];
+        
+        const BoxArray& ba = state_mf.boxArray(); 
+        const DistributionMapping& dm = state_mf.DistributionMap();
+        
+        MultiFab* U_mf = new MultiFab;
+        U_mf -> define(ba, dm, 4, NUM_GHOST_CELLS); 
+        MultiFab::Copy(*U_mf, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+        
+        MultiFab* smearedU_mf = new MultiFab;
+        smearedU_mf -> define(ba, dm, 4, NUM_GHOST_CELLS); 
+        
+        smear_gauge(*smearedU_mf, *U_mf, lev, time, Param);
+
+        ReduceOps<ReduceOpSum> reduce_operations;
+        ReduceData<Real> reduce_data(reduce_operations);
+        using ReduceTuple = typename decltype(reduce_data)::Type;
+        
+        
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+      for ( MFIter mfi(*smearedU_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
+      {
+        const Box& bx = mfi.tilebox();
+        const auto ncomp = state_mf.nComp();
+
+        const auto& smearedU_fab = smearedU_mf -> array(mfi);
+
+        // For each grid, loop over all the valid points
+        reduce_operations.eval(bx, reduce_data,
+        [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
+        {
+            return (state_TopCharge(i,j,k, smearedU_fab));
+        });
+      }
+        ReduceTuple reduced_values = reduce_data.value();
+        // MPI reduction
+        ParallelDescriptor::ReduceRealSum(amrex::get<0>(reduced_values));
+        Real action = amrex::get<0>(reduced_values);
+    
+        
+        delete U_mf;
+        delete smearedU_mf;
+        return action/(2.0*M_PI);
+    }
+    
+    
+}
+
+Real AmrCoreAdv::meas_Total_TopCharge_Lev(amrex::Vector<amrex::MultiFab>& state, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param, int high_lev)
+{
+    Real TopCharge = 0;
+    for(int i = 0; i <= high_lev; i++)
+    {
+        TopCharge += meas_TopCharge_Lev(state, i, time, geom[i], Param);   
+    }
+
+    return TopCharge;
 }
 
