@@ -274,7 +274,7 @@ private:
     amrex::Vector<amrex::Real> t_old;
     amrex::Vector<amrex::Real> dt;
 
-    // array of multifabs to store the solution at each level of refinement
+    // array of multifabs to store the gauge at each level of refinement
     // after advancing a level we use "swap".
     amrex::Vector<amrex::MultiFab> grid_new;
     amrex::Vector<amrex::MultiFab> grid_hold;
@@ -367,10 +367,10 @@ private:
     bool is_regridded = false;
 
     // tagging criteria
-  amrex::Real time_lower = 500;
-  amrex::Real time_upper = 600;
-  int x0_lower = -8;
-  int x0_upper = 8;
+    amrex::Real time_lower = 500;
+    amrex::Real time_upper = 600;
+    int x0_lower = -8;
+    int x0_upper = 8;
     int x1_lower = -8;
     int x1_upper = 8;
   

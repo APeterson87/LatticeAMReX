@@ -60,7 +60,8 @@ state_update_momentum(int i, int j, int k,
         amrex::Real U_0_m0_r = state_fab(i-1, j, k, Idx::U_0_Real);
         amrex::Real U_0_m0_i = state_fab(i-1, j, k, Idx::U_0_Imaginary);
         
-        
+	// Compute the gauge force. This (for now, with no fermions) can be done locally
+	// in this function only.
         amrex::Real Plaq_0_im = -U_0_00_i*U_0_0p_i*U_1_00_i*U_1_p0_r + U_0_00_i*U_0_0p_i*U_1_00_r*U_1_p0_i + U_0_00_i*U_0_0p_r*U_1_00_i*U_1_p0_i + U_0_00_i*U_0_0p_r*U_1_00_r*U_1_p0_r - U_0_00_r*U_0_0p_i*U_1_00_i*U_1_p0_i - U_0_00_r*U_0_0p_i*U_1_00_r*U_1_p0_r - U_0_00_r*U_0_0p_r*U_1_00_i*U_1_p0_r + U_0_00_r*U_0_0p_r*U_1_00_r*U_1_p0_i;
         
         amrex::Real Plaq_1_im = -U_0_00_i*U_0_0m_i*U_1_0m_i*U_1_pm_r + U_0_00_i*U_0_0m_i*U_1_0m_r*U_1_pm_i - U_0_00_i*U_0_0m_r*U_1_0m_i*U_1_pm_i - U_0_00_i*U_0_0m_r*U_1_0m_r*U_1_pm_r + U_0_00_r*U_0_0m_i*U_1_0m_i*U_1_pm_i + U_0_00_r*U_0_0m_i*U_1_0m_r*U_1_pm_r - U_0_00_r*U_0_0m_r*U_1_0m_i*U_1_pm_r + U_0_00_r*U_0_0m_r*U_1_0m_r*U_1_pm_i;
@@ -75,10 +76,7 @@ state_update_momentum(int i, int j, int k,
         amrex::Real fD_1 = 0;
         
         state_fab(i, j, k, Idx::Pi_0) += -(F_0-fD_0)*dtau/(dx0*dx1); //dx0; //(dx1*dx0);
-        
         state_fab(i, j, k, Idx::Pi_1) += -(F_1-fD_1)*dtau/(dx0*dx1); //dx1; //(dx0*dx1);
-        
-
 }
 
 AMREX_GPU_DEVICE 

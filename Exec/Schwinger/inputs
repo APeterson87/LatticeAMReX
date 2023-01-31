@@ -1,17 +1,17 @@
 # Stopping Criteria
-max_step = 1000
-num_therm_steps = 100
-starting_measurements_step = 200
+max_step = 7000
+num_therm_steps = 1000
+starting_measurements_step = 2000
 stop_time = 2000000.0
 
 num_hmc_substeps = 25
-hmc_tau = 0.0
+hmc_tau = 1.0
  
-coupling_beta = 12.0
+coupling_beta = 5.0
 mass_0 = 0.1
 wilson_r = 1.0
 Temp_T = 1.0
-coupling_beta_lev = 12.0 12.0
+coupling_beta_lev = 5.0 5.0
 sigma_lev = 1.0 1.0
 temp_lev = 1.0 1.0
 hmc_tau_lev = 1.0 1.0
@@ -22,7 +22,7 @@ BiCGThresh = 1e-16
 BiCG_Max_Iter = 10000
 Use_BiCG_Stab = 0
 
-APE_iter = 1
+APE_iter = 0
 APE_alpha = 0.5
 
 # Refinement Parameteres
@@ -34,9 +34,9 @@ x1_lower = -8
 x1_upper = 8
 
 # Ensure time_lower % regrid_int == 0
-amr.regrid_int = 50
+amr.regrid_int = 10000
 amr.max_level = 1
-amr.max_grid_size = 128 128
+amr.max_grid_size = 32 32
 amr.ref_ratio = 2
 amr.n_error_buf = 0
 amr.blocking_factor = 2 2
@@ -47,15 +47,15 @@ measWilsonLoops_Interval = 100
 CheckReversedTrajectoryInterval = 1000
 
 # Problem Size & Geometry 
-amr.n_cell = 64 64
+amr.n_cell = 32 32
 
 geometry.is_periodic = 1 1 
 geometry.coord_sys = 0 
-#geometry.prob_lo = -64.0 -64.0 #-20.9805 -20.9805 -20.9805 
-#geometry.prob_hi = 64.0 64.0 #20.9805 20.9805 20.9805
+#geometry.prob_lo = -32.0 -32.0 #-20.9805 -20.9805 -20.9805 
+#geometry.prob_hi = 32.0 32.0 #20.9805 20.9805 20.9805
 
-geometry.prob_lo = -64.0 -64.0 #-20.9805 -20.9805 -20.9805 
-geometry.prob_hi = 64.0 64.0 #20.9805 20.9805 20.9805 
+geometry.prob_lo = -32.0 -32.0 #-20.9805 -20.9805 -20.9805 
+geometry.prob_hi = 32.0 32.0 #20.9805 20.9805 20.9805 
 
 # Turn on verbosity in amr 
 amr.v = 1
@@ -77,7 +77,7 @@ problem.cfl = 0.5
 problem.epsilon = 0.01
 
 # Plotting steps 
-amr.plot_int = 1
+amr.plot_int = -1
 amr.diag_int = -1
 amr.chk_int = -1
 
