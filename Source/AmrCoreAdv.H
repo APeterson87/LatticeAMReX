@@ -252,6 +252,11 @@ private:
     Real Action_Momentum_Lev (amrex::Vector<amrex::MultiFab>& state, int lev, const amrex::Geometry& geom);
     
     Real meas_TopCharge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
+    
+    Real meas_TopCharge_Lev (amrex::Vector<amrex::MultiFab>& state, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param);
+    
+    Real meas_Total_TopCharge_Lev(amrex::Vector<amrex::MultiFab>& state, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param, int high_lev);
+    
     void meas_WilsonLoops(MultiFab& U_mf, int lev, amrex::Real time, const Geometry& geom, Parameters Param, amrex::Vector<double> &sigma, std::ofstream& Sigma);
     Real Measure_Plaq (MultiFab& U_mf, int lev);
     
