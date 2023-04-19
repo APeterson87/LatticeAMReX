@@ -6,41 +6,48 @@
 
 namespace Idx { 
   enum ETIndexes {// Gauge
-			 U_0_Real,
-                         U_0_Imaginary,
-                         U_1_Real,
-                         U_1_Imaginary,
-			 // mom
-                         Pi_0,
-                         Pi_1,
-			 // fermion
-                         Phi_0_Real, 
-                         Phi_0_Imaginary, 
-                         Phi_1_Real, 
-                         Phi_1_Imaginary,
-			 // measurements
-                         ActionDensity,
-                         TopChargeDensity,
-                         NumScalars}; 
+		  U_0_Real,
+		  U_0_Imag,
+		  U_1_Real,
+		  U_1_Imag,
+		  // mom
+		  Pi_0,
+		  Pi_1,
+		  // Fermion spin 0
+		  Phi_0_Real, 
+		  Phi_0_Imag,
+		  // Fermion spin 1
+		  Phi_1_Real,
+		  Phi_1_Imag,
+		  // Gauge force
+		  F_U_0,
+		  F_U_1,
+		  // Fermion force
+		  F_Phi_0,
+		  F_Phi_1,
+		  // measurements
+		  ActionDensity,
+		  TopChargeDensity,
+		  NumScalars}; 
 };
 
 namespace auxIdx { 
          enum auxIndexes {DDinvPhi_0_Real, 
-			  DDinvPhi_0_Imaginary, 
+			  DDinvPhi_0_Imag, 
 			  DDinvPhi_1_Real, 
-			  DDinvPhi_1_Imaginary, 
+			  DDinvPhi_1_Imag, 
 			  g3DinvPhi_0_Real, 
-			  g3DinvPhi_0_Imaginary, 
+			  g3DinvPhi_0_Imag, 
 			  g3DinvPhi_1_Real, 
-			  g3DinvPhi_1_Imaginary,
+			  g3DinvPhi_1_Imag,
 			  NumScalars}; 
 };
 
 namespace cIdx {
          enum cIndexes {Real_0,
-                        Imaginary_0,
+                        Imag_0,
                         Real_1,
-                        Imaginary_1,
+                        Imag_1,
                         NumIndexes};
 };
 

@@ -30,17 +30,17 @@ state_init(int i, int j, int k,
         amrex::Real Pi_1 = amrex::RandomNormal(0,1.0); //-0.1*2*M_PI/64*std::sin(2*M_PI*(x0)/(128)); //-0.1*std::exp(-(x0*x0 + x1*x1)/100);
         
         state_fab(i, j, k, Idx::U_0_Real) = std::cos(Theta_0); 
-        state_fab(i, j, k, Idx::U_0_Imaginary) = std::sin(Theta_0);
+        state_fab(i, j, k, Idx::U_0_Imag) = std::sin(Theta_0);
         state_fab(i, j, k, Idx::U_1_Real) = std::cos(Theta_1);
-        state_fab(i, j, k, Idx::U_1_Imaginary) = std::sin(Theta_1);
+        state_fab(i, j, k, Idx::U_1_Imag) = std::sin(Theta_1);
         
         //state_fab(i, j, k, Idx::Pi_0) = Pi_0;
         //state_fab(i, j, k, Idx::Pi_1) = Pi_1;
         
         state_fab(i, j, k, Idx::Phi_0_Real) = 0; 
-        state_fab(i, j, k, Idx::Phi_0_Imaginary) = 0;
+        state_fab(i, j, k, Idx::Phi_0_Imag) = 0;
         state_fab(i, j, k, Idx::Phi_1_Real) = 0;
-        state_fab(i, j, k, Idx::Phi_1_Imaginary) = 0;
+        state_fab(i, j, k, Idx::Phi_1_Imag) = 0;
         
         
 }
@@ -58,14 +58,14 @@ aux_init(int i, int j, int k,
         amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1]; 
         
         aux_fab(i, j, k, auxIdx::DDinvPhi_0_Real) = 0; 
-        aux_fab(i, j, k, auxIdx::DDinvPhi_0_Imaginary) = 0;
+        aux_fab(i, j, k, auxIdx::DDinvPhi_0_Imag) = 0;
         aux_fab(i, j, k, auxIdx::DDinvPhi_1_Real) = 0;
-        aux_fab(i, j, k, auxIdx::DDinvPhi_1_Imaginary) = 0;
+        aux_fab(i, j, k, auxIdx::DDinvPhi_1_Imag) = 0;
         
         aux_fab(i, j, k, auxIdx::g3DinvPhi_0_Real) = 0; 
-        aux_fab(i, j, k, auxIdx::g3DinvPhi_0_Imaginary) = 0;
+        aux_fab(i, j, k, auxIdx::g3DinvPhi_0_Imag) = 0;
         aux_fab(i, j, k, auxIdx::g3DinvPhi_1_Real) = 0;
-        aux_fab(i, j, k, auxIdx::g3DinvPhi_1_Imaginary) = 0;
+        aux_fab(i, j, k, auxIdx::g3DinvPhi_1_Imag) = 0;
 
 
         

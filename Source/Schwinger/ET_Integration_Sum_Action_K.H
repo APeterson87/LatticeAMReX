@@ -9,39 +9,42 @@ AMREX_GPU_DEVICE
 inline 
 amrex::Real
 sum_action_gauge(const int i, const int j, const int k, 
-        amrex::Array4<amrex::Real> const& state_fab,
-        const amrex::GeometryData& geom,
-        amrex::Real beta) 
+		 amrex::Array4<amrex::Real> const& state_fab,
+		 const amrex::GeometryData& geom,
+		 amrex::Real beta) 
 {
-        
-        const auto domain_xlo = geom.ProbLo(); 
-        
-        amrex::Real x0 = (i + 0.5)*geom.CellSize(0) + domain_xlo[0]; 
-        amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1];
-    
-        amrex::Real dx0 = geom.CellSize(0);
-        amrex::Real dx1 = geom.CellSize(1);
-    
-        amrex::Real U1_r = state_fab(i, j, k, Idx::U_0_Real);
-        amrex::Real U1_i = state_fab(i, j, k, Idx::U_0_Imaginary);
-        
-        amrex::Real U2_r = state_fab(i+1, j, k, Idx::U_1_Real);
-        amrex::Real U2_i = state_fab(i+1, j, k, Idx::U_1_Imaginary);
-        
-        amrex::Real U3_r = state_fab(i, j+1, k, Idx::U_0_Real);
-        amrex::Real U3_i = -state_fab(i, j+1, k, Idx::U_0_Imaginary);
-        
-        amrex::Real U4_r = state_fab(i, j, k, Idx::U_1_Real);
-        amrex::Real U4_i = -state_fab(i, j, k, Idx::U_1_Imaginary);    
-    
-        
-        amrex::Real plaq_re = U1_i*U2_i*U3_i*U4_i - U1_i*U2_i*U3_r*U4_r - U1_i*U2_r*U3_i*U4_r - U1_i*U2_r*U3_r*U4_i - U1_r*U2_i*U3_i*U4_r - U1_r*U2_i*U3_r*U4_i - U1_r*U2_r*U3_i*U4_i + U1_r*U2_r*U3_r*U4_r;
-        
-        amrex::Real H_Gauge = beta*(1-plaq_re);
-
-        amrex::Real delta_action = H_Gauge;
-            
-        return delta_action;
+  
+  //const auto domain_xlo = geom.ProbLo(); 
+  
+  //amrex::Real x0 = (i + 0.5)*geom.CellSize(0) + domain_xlo[0]; 
+  //amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1];
+  
+  //amrex::Real dx0 = geom.CellSize(0);
+  //amrex::Real dx1 = geom.CellSize(1);
+  
+  // U(x,y)_mu
+  amrex::Real U1_r = state_fab(i, j, k, Idx::U_0_Real);
+  amrex::Real U1_i = state_fab(i, j, k, Idx::U_0_Imag);
+  
+  // U(x+1,y)_nu
+  amrex::Real U2_r = state_fab(i+1, j, k, Idx::U_1_Real);
+  amrex::Real U2_i = state_fab(i+1, j, k, Idx::U_1_Imag);
+  
+  // U^\dagger(x,y+1)_mu
+  amrex::Real U3_r =  state_fab(i, j+1, k, Idx::U_0_Real);
+  amrex::Real U3_i = -state_fab(i, j+1, k, Idx::U_0_Imag);
+  
+  // U^\dagger(x,y)_nu
+  amrex::Real U4_r =  state_fab(i, j, k, Idx::U_1_Real);
+  amrex::Real U4_i = -state_fab(i, j, k, Idx::U_1_Imag);    
+  
+  // Real part of U(x,y)_mu * U(x+1,y)_nu * U^\dagger(x,y+1)_mu * U^\dagger(x,y)_nu
+  amrex::Real plaq_re = (U1_i*U2_i*U3_i*U4_i - U1_i*U2_i*U3_r*U4_r -
+			 U1_i*U2_r*U3_i*U4_r - U1_i*U2_r*U3_r*U4_i -
+			 U1_r*U2_i*U3_i*U4_r - U1_r*U2_i*U3_r*U4_i -
+			 U1_r*U2_r*U3_i*U4_i + U1_r*U2_r*U3_r*U4_r);
+  
+  return beta*(1-plaq_re);
 }
 
 AMREX_GPU_DEVICE 
@@ -76,9 +79,9 @@ sum_action_D(const int i, const int j, const int k,
 {
         
         amrex::Real PhiDDinvPhi_0_r = state_fab(i, j, k, Idx::Phi_0_Real)*aux_fab(i, j, k, auxIdx::DDinvPhi_0_Real); 
-        amrex::Real PhiDDinvPhi_0_i = state_fab(i, j, k, Idx::Phi_0_Imaginary)*aux_fab(i, j, k, auxIdx::DDinvPhi_0_Imaginary); 
+        amrex::Real PhiDDinvPhi_0_i = state_fab(i, j, k, Idx::Phi_0_Imag)*aux_fab(i, j, k, auxIdx::DDinvPhi_0_Imag); 
         amrex::Real PhiDDinvPhi_1_r = state_fab(i, j, k, Idx::Phi_1_Real)*aux_fab(i, j, k, auxIdx::DDinvPhi_1_Real); 
-        amrex::Real PhiDDinvPhi_1_i = state_fab(i, j, k, Idx::Phi_1_Imaginary)*aux_fab(i, j, k, auxIdx::DDinvPhi_1_Imaginary); 
+        amrex::Real PhiDDinvPhi_1_i = state_fab(i, j, k, Idx::Phi_1_Imag)*aux_fab(i, j, k, auxIdx::DDinvPhi_1_Imag); 
         
         amrex::Real delta_action = (PhiDDinvPhi_0_r+ PhiDDinvPhi_0_i + PhiDDinvPhi_1_r + PhiDDinvPhi_1_i) ;
     
