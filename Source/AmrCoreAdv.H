@@ -94,8 +94,10 @@ public:
     virtual void ErrorEst (int lev, amrex::TagBoxArray& tags, amrex::Real time, int ngrow) override;
     
 
-    void BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useInitGuess, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
-
+    //void BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useInitGuess, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
+    
+    void State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Vector<amrex::MultiFab>& state, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param);
+    
 private:
 
     ////////////////
@@ -126,7 +128,9 @@ private:
     // compute a new multifab by coping in phi from valid region and filling ghost cells
     // works for single level and 2-level cases (fill fine grid ghost by interpolating from coarse)
     void FillPatch (int lev, amrex::Real time, amrex::MultiFab& mf, int icomp, int ncomp);
-
+    void FillPatchAux (int lev, amrex::Real time, amrex::MultiFab& mf, int icomp, int ncomp);
+    
+    void FillPatchForBiCG (int lev, Real time, MultiFab& cmf, MultiFab& mf, int icomp, int ncomp);
     // compute a new multifab by coping in data from valid region and filling ghost cells
     // works for single level and 2-level cases (fill fine grid ghost by interpolating from coarse)
     // unlike FillPatch, FillIntermediatePatch will use the supplied multifab instead of fine level data.
@@ -138,9 +142,13 @@ private:
     // fill an entire multifab by interpolating from the coarser level
     // this comes into play when a new level of refinement appears
     void FillCoarsePatch (int lev, amrex::Real time, amrex::MultiFab& mf, int icomp, int ncomp);
+    void FillCoarsePatchAux (int lev, amrex::Real time, amrex::MultiFab& mf, int icomp, int ncomp);
 
     // utility to copy in data from old and/or new state into another multifab
     void GetData (int lev, amrex::Real time, amrex::Vector<amrex::MultiFab*>& data,
+                  amrex::Vector<amrex::Real>& datatime);
+                  
+    void GetDataAux (int lev, amrex::Real time, amrex::Vector<amrex::MultiFab*>& data,
                   amrex::Vector<amrex::Real>& datatime);
 
     // advance a level by dt
@@ -282,6 +290,7 @@ private:
     // array of multifabs to store the gauge at each level of refinement
     // after advancing a level we use "swap".
     amrex::Vector<amrex::MultiFab> grid_new;
+    amrex::Vector<amrex::MultiFab> grid_aux;
     amrex::Vector<amrex::MultiFab> grid_hold;
 
     // array of time integrator objects at each level of refinement
@@ -293,6 +302,7 @@ private:
 
     // Interpolater to use between levels
     amrex::Interpolater* mapper = nullptr;
+    amrex::Interpolater* mapper_aux = nullptr;
 
     ////////////////
     // runtime parameters

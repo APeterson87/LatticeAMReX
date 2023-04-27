@@ -24,6 +24,11 @@ state_Perturbation(int i, int j, int k,
   amrex::Real Pi_1 = amrex::RandomNormal(0, sigma_lev);
   state_fab(i, j, k, Idx::Pi_0) = Pi_0;
   state_fab(i, j, k, Idx::Pi_1) = Pi_1;
+  
+  state_fab(i, j, k, Idx::Phi_0_Real) = amrex::RandomNormal(0,1)/std::sqrt(2);
+  state_fab(i, j, k, Idx::Phi_0_Imaginary) = amrex::RandomNormal(0,1)/std::sqrt(2);
+  state_fab(i, j, k, Idx::Phi_1_Real) = amrex::RandomNormal(0,1)/std::sqrt(2);
+  state_fab(i, j, k, Idx::Phi_1_Imaginary) = amrex::RandomNormal(0,1)/std::sqrt(2);
 
   /*
   amrex::Real r1 = sqrt(-2.0*log(drand48()));

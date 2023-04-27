@@ -6,7 +6,7 @@
 
 namespace Idx { 
   enum ETIndexes {// Gauge
-			 U_0_Real,
+                         U_0_Real,
                          U_0_Imaginary,
                          U_1_Real,
                          U_1_Imaginary,
@@ -18,17 +18,39 @@ namespace Idx {
                          Phi_0_Imaginary, 
                          Phi_1_Real, 
                          Phi_1_Imaginary,
-			 // measurements
+
                          ActionDensity,
                          TopChargeDensity,
                          NumScalars}; 
 };
 
 namespace auxIdx { 
-         enum auxIndexes {DDinvPhi_0_Real, 
+         enum auxIndexes {
+              res_0_Real,
+              res_0_Imaginary,
+              res_1_Real,
+              res_1_Imaginary,
+             
+              p_0_Real,
+              p_0_Imaginary,
+              p_1_Real,
+              p_1_Imaginary,
+             
+              Dp_0_Real,
+              Dp_0_Imaginary,
+              Dp_1_Real,
+              Dp_1_Imaginary,
+             
+              DDp_0_Real,
+              DDp_0_Imaginary,
+              DDp_1_Real,
+              DDp_1_Imaginary,
+                 
+              DDinvPhi_0_Real, 
 			  DDinvPhi_0_Imaginary, 
 			  DDinvPhi_1_Real, 
 			  DDinvPhi_1_Imaginary, 
+             
 			  g3DinvPhi_0_Real, 
 			  g3DinvPhi_0_Imaginary, 
 			  g3DinvPhi_1_Real, 

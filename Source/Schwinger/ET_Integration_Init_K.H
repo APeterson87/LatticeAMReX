@@ -37,10 +37,10 @@ state_init(int i, int j, int k,
         //state_fab(i, j, k, Idx::Pi_0) = Pi_0;
         //state_fab(i, j, k, Idx::Pi_1) = Pi_1;
         
-        state_fab(i, j, k, Idx::Phi_0_Real) = 0; 
-        state_fab(i, j, k, Idx::Phi_0_Imaginary) = 0;
-        state_fab(i, j, k, Idx::Phi_1_Real) = 0;
-        state_fab(i, j, k, Idx::Phi_1_Imaginary) = 0;
+        state_fab(i, j, k, Idx::Phi_0_Real) = amrex::RandomNormal(0,1)/std::sqrt(2);
+        state_fab(i, j, k, Idx::Phi_0_Imaginary) = amrex::RandomNormal(0,1)/std::sqrt(2);
+        state_fab(i, j, k, Idx::Phi_1_Real) = amrex::RandomNormal(0,1)/std::sqrt(2);
+        state_fab(i, j, k, Idx::Phi_1_Imaginary) = amrex::RandomNormal(0,1)/std::sqrt(2);
         
         
 }
@@ -49,8 +49,8 @@ AMREX_GPU_DEVICE
 inline 
 void 
 aux_init(int i, int j, int k, 
-        amrex::Array4<amrex::Real> const& aux_fab, 
-        amrex::Real time, const amrex::GeometryData& geom) noexcept 
+        amrex::Array4<amrex::Real> const& aux_fab,
+        amrex::Real cur_time, int lev, const amrex::GeometryData& geom) noexcept 
 {
         const auto domain_xlo = geom.ProbLo(); 
         
