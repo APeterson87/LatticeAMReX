@@ -179,12 +179,15 @@ AmrCoreAdv::Evolve ()
             if(Param.use_dynamical_fermions)
             {
                 
+                FillIntermediatePatch(level, cur_time, grid_aux[level], 0, grid_aux[level].nComp());
+                
                 MultiFab x_mf(ba, dm, 4, grid_aux[level].nGrow());
                 MultiFab::Swap(x_mf, grid_aux[level], auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, grid_aux[level].nGrow()); 
             
                 MultiFab b_mf(ba, dm, 4, grid_new[level].nGrow());
                 MultiFab::Swap(b_mf, grid_new[level], Idx::Phi_0_Real, cIdx::Real_0, 4, grid_new[level].nGrow());
                 
+                FillIntermediatePatch(level, cur_time, grid_new[level], 0, grid_new[level].nComp());
                 MultiFab U_mf(ba, dm, 4, grid_new[level].nGrow());
                 MultiFab::Swap(U_mf, grid_new[level], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[level].nGrow());
 
@@ -193,7 +196,8 @@ AmrCoreAdv::Evolve ()
                 MultiFab::Swap(x_mf, grid_aux[level], auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, grid_aux[level].nGrow()); 
                 MultiFab::Swap(b_mf, grid_new[level], Idx::Phi_0_Real, cIdx::Real_0, 4, grid_aux[level].nGrow());
                 MultiFab::Swap(U_mf, grid_new[level], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[level].nGrow());
-
+                
+                FillIntermediatePatch(level, cur_time, grid_aux[level], 0, grid_aux[level].nComp());
                 Set_g3DinvPhi(grid_new[level], grid_aux[level], geom_lev, level, cur_time, Param.mass, Param.r);
             }
                             
@@ -207,6 +211,7 @@ AmrCoreAdv::Evolve ()
         cur_time += dt[0];
 
         amrex::Print() << std::endl << "*************** OLD STATE DATA ***************" << std::endl;
+        FillIntermediatePatch(lev, cur_time, grid_new[lev], 0, grid_new[lev].nComp());
         Real HTotalcurrent = Total_Action(grid_new[lev], grid_aux[lev], lev, Param);
         amrex::Print() << "**********************************************" << std::endl << std::endl;
         
@@ -222,12 +227,15 @@ AmrCoreAdv::Evolve ()
             
             const DistributionMapping& dm = grid_new[level].DistributionMap();
             
+            FillIntermediatePatch(level, cur_time, grid_aux[level], 0, grid_aux[level].nComp());
+                
             MultiFab x_mf(ba, dm, 4, grid_aux[level].nGrow());
             MultiFab::Swap(x_mf, grid_aux[level], auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, grid_aux[level].nGrow()); 
             
             MultiFab b_mf(ba, dm, 4, grid_new[level].nGrow());
             MultiFab::Swap(b_mf, grid_new[level], Idx::Phi_0_Real, cIdx::Real_0, 4, grid_new[level].nGrow());
                 
+            FillIntermediatePatch(level, cur_time, grid_new[level], 0, grid_new[level].nComp());
             MultiFab U_mf(ba, dm, 4, grid_new[level].nGrow());
             MultiFab::Swap(U_mf, grid_new[level], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[level].nGrow());
 
@@ -242,6 +250,7 @@ AmrCoreAdv::Evolve ()
         amrex::Print() << std::endl;
         
         amrex::Print() << "*************** NEW STATE DATA ***************" << std::endl;
+        FillIntermediatePatch(lev, cur_time, grid_new[lev], 0, grid_new[lev].nComp());
         Real HTotal = Total_Action(grid_new[lev], grid_aux[lev], lev, Param);
         amrex::Print() << "**********************************************" << std::endl;
         
@@ -1544,7 +1553,7 @@ void AmrCoreAdv::Perturb (MultiFab& state_mf, int lev, Real time, Parameters Par
 {
     //MultiFab& state_mf = state[lev];
     
-    //auto& nodal_mask = grid_msk[lev];
+    auto& nodal_mask = grid_msk[lev];
     
     const BoxArray& ba_lev = state_mf.boxArray();
     const DistributionMapping& dm_lev = state_mf.DistributionMap();
@@ -1605,8 +1614,11 @@ void AmrCoreAdv::Perturb (MultiFab& state_mf, int lev, Real time, Parameters Par
   //FlipSigns(lev, tmp_fermi_mf, cIdx::Real_0, 4);
   
   Set_Dp(fermi_mf, tmp_fermi_mf, U_mf, lev, time, Param);
+    
+  FillIntermediatePatch(lev, time, fermi_mf, 0, fermi_mf.nComp());  
   Set_g3p(fermi_mf, fermi_mf, lev, time);
- 
+    
+  FillIntermediatePatch(lev, time, fermi_mf, 0, fermi_mf.nComp());
   MultiFab::Swap(state_mf, fermi_mf,  cIdx::Real_0, Idx::Phi_0_Real, 4, state_mf.nGrow());
   MultiFab::Swap(U_mf, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
   
@@ -1621,21 +1633,26 @@ AmrCoreAdv::Trajectory(MultiFab& state_mf, MultiFab& aux_mf, int lev, const amre
     
     Real dtau = Param.tau/Param.hmc_substeps;
 
-    
+    FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
     update_momentum(state_mf, aux_mf, lev, time, geom, Param, dtau/2.0);
     
     for(int i = 1; i < Param.hmc_substeps; i++)
     {
+        FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
         update_gauge(state_mf, lev, time, geom, Param, dtau);
         
         if(Param.use_dynamical_fermions)
         {
+
+            FillIntermediatePatch(lev, time, aux_mf, 0, aux_mf.nComp());
+            
             MultiFab x_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
             MultiFab::Swap(x_mf, aux_mf, auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, aux_mf.nGrow()); 
             
             MultiFab b_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
             MultiFab::Swap(b_mf, state_mf, Idx::Phi_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
             
+            FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
             MultiFab U_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
             MultiFab::Swap(U_mf, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
             
@@ -1645,22 +1662,31 @@ AmrCoreAdv::Trajectory(MultiFab& state_mf, MultiFab& aux_mf, int lev, const amre
             MultiFab::Swap(b_mf, state_mf, Idx::Phi_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
             MultiFab::Swap(U_mf, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
             
+            FillIntermediatePatch(lev, time, aux_mf, 0, aux_mf.nComp()); 
             Set_g3DinvPhi(state_mf, aux_mf, geom, lev, time, Param.mass, Param.r);
+            //FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
    
         }
+        FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
         update_momentum(state_mf, aux_mf, lev, time, geom, Param, dtau);
         
     }
     
+    FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
     update_gauge(state_mf, lev, time, geom, Param, dtau);
+    
+
     if(Param.use_dynamical_fermions)
     {
+        FillIntermediatePatch(lev, time, aux_mf, 0, aux_mf.nComp());
+        
         MultiFab x_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
         MultiFab::Swap(x_mf, aux_mf, auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, aux_mf.nGrow()); 
             
         MultiFab b_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
         MultiFab::Swap(b_mf, state_mf, Idx::Phi_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
         
+        FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
         MultiFab U_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
         MultiFab::Swap(U_mf, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
             
@@ -1669,10 +1695,14 @@ AmrCoreAdv::Trajectory(MultiFab& state_mf, MultiFab& aux_mf, int lev, const amre
         MultiFab::Swap(x_mf, aux_mf, auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, aux_mf.nGrow()); 
         MultiFab::Swap(b_mf, state_mf, Idx::Phi_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
         MultiFab::Swap(U_mf, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
-            
+        
+        FillIntermediatePatch(lev, time, aux_mf, 0, aux_mf.nComp());
         Set_g3DinvPhi(state_mf, aux_mf, geom, lev, time, Param.mass, Param.r);
+        //FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
    
     }
+    
+    FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
     update_momentum(state_mf, aux_mf, lev, time, geom, Param, dtau/2.0);
 }
 
@@ -1705,7 +1735,7 @@ void AmrCoreAdv::update_gauge (MultiFab& state_mf, int lev, const amrex::Real ti
   }
     
   //state_mf.OverrideSync(*nodal_mask, geom.periodicity());
-  FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
+  //FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
   //FlipSigns(lev, state_mf, Idx::Phi_0_Real, 4);
   
 }
@@ -1743,7 +1773,7 @@ void AmrCoreAdv::update_momentum (MultiFab& state_mf, MultiFab& aux_mf, int lev,
   }
     
   //state_mf.OverrideSync(*nodal_mask, geom.periodicity());
-  FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
+  //FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
   //FlipSigns(lev, state_mf, Idx::Phi_0_Real, 4);
     
 }
@@ -1927,7 +1957,7 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useI
     //mfU -> define(ba,dm,4,NUM_GHOST_CELLS);
     
     //MultiFab::Swap(*mfU, S_new, Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
-
+    
     MultiFab* mfres = new MultiFab;
     mfres -> define(ba,dm,4,NUM_GHOST_CELLS);
     
@@ -1942,12 +1972,19 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useI
         MultiFab* DDx_mf = new MultiFab;
         DDx_mf -> define(ba,dm,4,NUM_GHOST_CELLS);
     
+        FillIntermediatePatch(lev, time, x_mf, 0, Dx_mf->nComp()); //new
         Set_Dp(*Dx_mf, x_mf, U_mf, lev, time, Param);
+        
+        FillIntermediatePatch(lev, time, *Dx_mf, 0, Dx_mf->nComp()); //new
         Set_g3p(*Dx_mf, *Dx_mf, lev, time);
-    
+        
+        FillIntermediatePatch(lev, time, *Dx_mf, 0, Dx_mf->nComp()); //new 
         Set_Dp(*DDx_mf, *Dx_mf, U_mf, lev, time, Param);
+        
+        FillIntermediatePatch(lev, time, *DDx_mf, 0, Dx_mf->nComp()); //new 
         Set_g3p(*DDx_mf, *DDx_mf, lev, time);
         
+        FillIntermediatePatch(lev, time, *DDx_mf, 0, DDx_mf->nComp()); //new   
         MultiFab::Subtract(*mfres, *DDx_mf, cIdx::Real_0, cIdx::Real_0, 4, NUM_GHOST_CELLS);
         
         delete Dx_mf;
@@ -1961,7 +1998,7 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useI
     MultiFab* mfp = new MultiFab;
     mfp -> define(ba,dm,4,NUM_GHOST_CELLS);
     
-    //FillIntermediatePatch(lev, time, *mfres, 0, x_mf.nComp()); //new
+    FillIntermediatePatch(lev, time, *mfres, 0, mfres->nComp()); //new  
     MultiFab::Copy(*mfp, *mfres, cIdx::Real_0, cIdx::Real_0, 4, NUM_GHOST_CELLS);
     
     MultiFab* mfDp = new MultiFab;
@@ -1971,33 +2008,36 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useI
     mfDDp -> define(ba,dm,4,NUM_GHOST_CELLS);
     
     rsq = MultiFab::Dot(*mfres, cIdx::Real_0,  *mfres, cIdx::Real_0, 4, 0);
-    //amrex::Print() << rsq << std::endl;
     
     for(int i = 0; i < Param.BiCG_Max_Iters; i++)
     {
         
+        
         FillIntermediatePatch(lev, time, *mfp, 0, 4); //new
         Set_Dp(*mfDp, *mfp, U_mf, lev, time, Param);
+        
+        FillIntermediatePatch(lev, time, *mfDp, 0, 4); //new
         Set_g3p(*mfDp, *mfDp, lev, time);
         
         FillIntermediatePatch(lev, time, *mfDp, 0, 4); //new
         Set_Dp(*mfDDp, *mfDp, U_mf, lev, time, Param);
+        
+        FillIntermediatePatch(lev, time, *mfDDp, 0, 4); //new
         Set_g3p(*mfDDp, *mfDDp, lev, time);
+        
+        //FillIntermediatePatch(lev, time, *mfDDp, 0, 4);
 
-        //FillIntermediatePatch(lev, time, *mfDDp, 0, 4); //new
         denom = MultiFab::Dot(*mfp, cIdx::Real_0, *mfDDp, cIdx::Real_0, 4, 0);
         
-        //amrex::Print() << denom << std::endl;
-        
         alpha = rsq/denom;
+        
         MultiFab::Saxpy(x_mf, alpha, *mfp, cIdx::Real_0, cIdx::Real_0, 4, 0);
         //x_mf.OverrideSync(*nodal_mask, geom_lev.periodicity());
         //FillIntermediatePatch(lev, time, x_mf, 0, x_mf.nComp());
         //FlipSigns(lev, x_mf, cIdx::Real_0, 4);
         
+        FillIntermediatePatch(lev, time, *mfDDp, 0, 4);
         MultiFab::Saxpy(*mfres, -alpha, *mfDDp, cIdx::Real_0, cIdx::Real_0, 4, 0);
-        
-        //amrex::Print() << MultiFab::Dot(*nodal_mask, *mfp, cIdx::Real_0, *mfp, cIdx::Real_0, 4, 0, false) << std::endl;
         
         //mfres -> OverrideSync(*nodal_mask, geom_lev.periodicity());
         FillIntermediatePatch(lev, time, *mfres, 0, mfres -> nComp());
@@ -2010,8 +2050,6 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useI
         
         beta = rsq_new/rsq;
         rsq = rsq_new;
-        
-        amrex::Print() << rsq << std::endl;
         
         MultiFab::LinComb(*mfp, beta, *mfp, cIdx::Real_0, 1.0, *mfres, cIdx::Real_0, cIdx::Real_0, 4, 0);
         
@@ -2038,7 +2076,7 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useI
     delete mfDDp;
     
     //x_mf.OverrideSync(*nodal_mask, geom_lev.periodicity());
-    FillIntermediatePatch(lev, time, x_mf, 0, x_mf.nComp());
+    //FillIntermediatePatch(lev, time, x_mf, 0, x_mf.nComp());
     //FlipSigns(lev, x_mf, cIdx::Real_0, 4);
     
 }
@@ -2101,7 +2139,7 @@ void AmrCoreAdv::Set_g3DinvPhi (MultiFab& state_mf, MultiFab& aux_mf, const Geom
   }
   
   //aux_mf.OverrideSync(*nodal_mask, geom.periodicity());  
-  FillIntermediatePatch(lev, time, aux_mf, 0, aux_mf.nComp());
+  //FillIntermediatePatch(lev, time, aux_mf, 0, aux_mf.nComp());
   //FlipSigns(lev, aux_mf, 0, aux_mf.nComp());
 }
 
