@@ -13,8 +13,8 @@ state_Perturbation(int i, int j, int k,
         const amrex::Real time) noexcept 
 {
         
-        amrex::Real P_0 = amrex::RandomNormal(0,1);
-        amrex::Real P_1 = amrex::RandomNormal(0,1);
+        amrex::Real P_0 = amrex::RandomNormal(0,1.0);
+        amrex::Real P_1 = amrex::RandomNormal(0,1.0);
         
         state_fab(i, j, k, Idx::P_0) = P_0;
         state_fab(i, j, k, Idx::P_1) = P_1;        

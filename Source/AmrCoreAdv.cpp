@@ -136,6 +136,7 @@ AmrCoreAdv::Evolve ()
     std::ofstream TopCharge("TopologicalCharges.dat");
     std::ofstream Sigma("Sigma.dat");
     std::ofstream PiCorr("PionCorr.dat");
+    std::ofstream Action("Action.dat");
     
     amrex::Vector<double> pion_corr_total(Param.Ny/2+1, 0.0);
     amrex::Vector<double> sigma_total(Param.Nx/2-1, 0.0);
@@ -211,6 +212,33 @@ AmrCoreAdv::Evolve ()
         
         timeStep(lev, cur_time, iteration, Param);
         
+        if(istep[0] == 30)
+        {
+            int level = 0;
+            
+            const auto geom_lev = geom[level];
+        
+            const BoxArray& ba = grid_new[level].boxArray();
+            
+            const DistributionMapping& dm = grid_new[level].DistributionMap();
+            
+            MultiFab x_mf(ba, dm, 4, grid_aux[level].nGrow());
+            MultiFab::Swap(x_mf, grid_aux[level], auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, grid_aux[level].nGrow()); 
+            
+            MultiFab b_mf(ba, dm, 4, grid_new[level].nGrow());
+            MultiFab::Swap(b_mf, grid_new[level], Idx::Phi_0_Real, cIdx::Real_0, 4, grid_new[level].nGrow());
+                
+            MultiFab U_mf(ba, dm, 4, grid_new[level].nGrow());
+            MultiFab::Swap(U_mf, grid_new[level], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[level].nGrow());
+
+            BiCG_Solve(x_mf, b_mf, U_mf, false, level, cur_time, geom_lev, Param);
+                
+            MultiFab::Swap(x_mf, grid_aux[level], auxIdx::DDinvPhi_0_Real, cIdx::Real_0, 4, grid_aux[level].nGrow()); 
+            MultiFab::Swap(b_mf, grid_new[level], Idx::Phi_0_Real, cIdx::Real_0, 4, grid_aux[level].nGrow());
+            MultiFab::Swap(U_mf, grid_new[level], Idx::U_0_Real, cIdx::Real_0, 4, grid_new[level].nGrow());
+            
+        }
+        
         amrex::Print() << std::endl;
         
         amrex::Print() << "*************** NEW STATE DATA ***************" << std::endl;
@@ -239,6 +267,9 @@ AmrCoreAdv::Evolve ()
         }
         
         amrex::Print() << "**********************************************" << std::endl << std::endl;
+        
+        Action << HTotal << std::endl;
+        
         if(step >= Param.starting_meas_step)
         {
             amrex::Print() << "**************** MEASUREMENTS ****************" << std::endl;
@@ -258,7 +289,7 @@ AmrCoreAdv::Evolve ()
             if (step%measWL_Interval == 0)
             {
                 WLcount++;
-                amrex::Print() << "Measuring Wilson Loops" << std::endl;
+                /*amrex::Print() << "Measuring Wilson Loops" << std::endl;
             
                 amrex::Vector<double> sigma(Param.Nx/2-1, 0.0);
                 meas_WilsonLoops(U_mf, lev, cur_time, geom[lev], Param, sigma, Sigma);
@@ -266,7 +297,7 @@ AmrCoreAdv::Evolve ()
                 std::transform(sigma_total.begin(), sigma_total.end(), sigma.begin(), sigma_total.begin(), std::plus<Real>());
                 for (Real e: sigma_total) amrex::Print() << std::fixed << std::setprecision(9) << e/WLcount << ' ';
 
-                amrex::Print() << std::endl;
+                amrex::Print() << std::endl;*/
                 
                 amrex::Print() << "Measuring Pion Correlation" << std::endl;
             
@@ -287,6 +318,8 @@ AmrCoreAdv::Evolve ()
 
         amrex::Print() << "Coarse STEP " << step+1 << " ends." << " TIME = " << cur_time
                        << " DT = " << dt[0]  << std::endl;
+        
+
 
         // sync up time
         for (lev = 0; lev <= finest_level; ++lev) {
@@ -328,6 +361,7 @@ AmrCoreAdv::Evolve ()
     TopCharge.close();
     Sigma.close();
     PiCorr.close();
+    Action.close();
 
     if (plot_int > 0 && istep[0] > last_plot_file_step) {
         WritePlotFile();
@@ -385,7 +419,7 @@ AmrCoreAdv::MakeNewLevelFromCoarse (int lev, Real time, const BoxArray& ba,
     const int nghost = grid_new[lev-1].nGrow();
     
     BoxArray nba = ba; 
-    nba.surroundingNodes();
+    //nba.surroundingNodes();
     
     grid_new[lev].define(nba, dm, ncomp, nghost);
     grid_old[lev].define(nba, dm, ncomp, nghost);
@@ -410,7 +444,7 @@ AmrCoreAdv::RemakeLevel (int lev, Real time, const BoxArray& ba,
     const int nghost = grid_new[lev].nGrow();
     
     BoxArray nba = ba;  //Double check if this is necessary
-    nba.surroundingNodes();
+    //nba.surroundingNodes();
 
     MultiFab new_state(nba, dm, ncomp, nghost);
     MultiFab old_state(nba, dm, ncomp, nghost);
@@ -436,7 +470,7 @@ AmrCoreAdv::ResetLevel (int lev, Real time, amrex::Vector<amrex::MultiFab>& hold
     auto ba = hold_grid[lev].boxArray();
     
     BoxArray nba = ba;  //Double check if this is necessary
-    nba.surroundingNodes();
+    //nba.surroundingNodes();
     
     auto dm = hold_grid[lev].DistributionMap();
     
@@ -477,7 +511,7 @@ void AmrCoreAdv::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& ba
     const int nghost = NUM_GHOST_CELLS;
     
     BoxArray nba = ba;
-    nba.surroundingNodes();
+    //nba.surroundingNodes();
     
     grid_new[lev].define(nba, dm, ncomp, nghost);
     grid_old[lev].define(nba, dm, ncomp, nghost);
@@ -511,9 +545,9 @@ void AmrCoreAdv::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& ba
       });
     }
     
-    state.OverrideSync(geom.periodicity());
+    //state.OverrideSync(geom.periodicity());
     FillIntermediatePatch(lev, time, state, 0, state.nComp());
-    FlipSigns(lev, state, Idx::Phi_0_Real, 4);
+    //FlipSigns(lev, state, Idx::Phi_0_Real, 4);
     
     //aux.OverrideSync(geom.periodicity());
     //FillIntermediatePatch(lev, time, aux, 0, aux.nComp());
@@ -1510,7 +1544,7 @@ void AmrCoreAdv::Perturb (MultiFab& state_mf, int lev, Real time, Parameters Par
 {
     //MultiFab& state_mf = state[lev];
     
-    auto& nodal_mask = grid_msk[lev];
+    //auto& nodal_mask = grid_msk[lev];
     
     const BoxArray& ba_lev = state_mf.boxArray();
     const DistributionMapping& dm_lev = state_mf.DistributionMap();
@@ -1521,7 +1555,7 @@ void AmrCoreAdv::Perturb (MultiFab& state_mf, int lev, Real time, Parameters Par
 #endif
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.nodaltilebox();
+    const Box& bx = mfi.tilebox();
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi);
@@ -1535,9 +1569,9 @@ void AmrCoreAdv::Perturb (MultiFab& state_mf, int lev, Real time, Parameters Par
     });
   }
   
-  state_mf.OverrideSync(*nodal_mask, geom[lev].periodicity());
+  //state_mf.OverrideSync(*nodal_mask, geom[lev].periodicity());
   FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
-  FlipSigns(lev, state_mf, Idx::Phi_0_Real, 4);
+  //FlipSigns(lev, state_mf, Idx::Phi_0_Real, 4);
   
   MultiFab tmp_fermi_mf(ba_lev, dm_lev, 4, state_mf.nGrow());
   MultiFab::Swap(tmp_fermi_mf, state_mf, Idx::Phi_0_Real, cIdx::Real_0, 4, state_mf.nGrow());
@@ -1552,7 +1586,7 @@ void AmrCoreAdv::Perturb (MultiFab& state_mf, int lev, Real time, Parameters Par
 #endif
   for ( MFIter mfi(tmp_fermi_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.nodaltilebox();
+    const Box& bx = mfi.tilebox();
     const auto ncomp = tmp_fermi_mf.nComp();
 
     const auto& tmp_fermi_fab = tmp_fermi_mf.array(mfi);
@@ -1566,9 +1600,9 @@ void AmrCoreAdv::Perturb (MultiFab& state_mf, int lev, Real time, Parameters Par
     });
   }
 
-  tmp_fermi_mf.OverrideSync(*nodal_mask, geom[lev].periodicity());
+  //tmp_fermi_mf.OverrideSync(*nodal_mask, geom[lev].periodicity());
   FillIntermediatePatch(lev, time, tmp_fermi_mf, 0, tmp_fermi_mf.nComp());
-  FlipSigns(lev, tmp_fermi_mf, cIdx::Real_0, 4);
+  //FlipSigns(lev, tmp_fermi_mf, cIdx::Real_0, 4);
   
   Set_Dp(fermi_mf, tmp_fermi_mf, U_mf, lev, time, Param);
   Set_g3p(fermi_mf, fermi_mf, lev, time);
@@ -1644,7 +1678,7 @@ AmrCoreAdv::Trajectory(MultiFab& state_mf, MultiFab& aux_mf, int lev, const amre
 
 void AmrCoreAdv::update_gauge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param, amrex::Real dtau)
 {
-    auto& nodal_mask = grid_msk[lev];
+    //auto& nodal_mask = grid_msk[lev];
     const auto dx = geom.CellSizeArray();
     int ncomp = state_mf.nComp();
     
@@ -1653,32 +1687,32 @@ void AmrCoreAdv::update_gauge (MultiFab& state_mf, int lev, const amrex::Real ti
 #endif
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.nodaltilebox();
+    const Box& bx = mfi.tilebox();
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi);
-    const auto& mask_arr = nodal_mask -> array(mfi);
+    //const auto& mask_arr = nodal_mask -> array(mfi);
     
     // For each grid, loop over all the valid points
     amrex::ParallelFor(bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        if (mask_arr(i, j, k))
-        {
+        //if (mask_arr(i, j, k))
+        //{
             state_update_gauge(i, j, k, state_fab, time, dx, geom.data(), dtau);
-        }
+        //}
     });
   }
     
-  state_mf.OverrideSync(*nodal_mask, geom.periodicity());
+  //state_mf.OverrideSync(*nodal_mask, geom.periodicity());
   FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
-  FlipSigns(lev, state_mf, Idx::Phi_0_Real, 4);
+  //FlipSigns(lev, state_mf, Idx::Phi_0_Real, 4);
   
 }
 
 void AmrCoreAdv::update_momentum (MultiFab& state_mf, MultiFab& aux_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau)
 {
-  auto& nodal_mask = grid_msk[lev];
+  //auto& nodal_mask = grid_msk[lev];
     
   const auto dx = geom.CellSizeArray();
     
@@ -1690,27 +1724,27 @@ void AmrCoreAdv::update_momentum (MultiFab& state_mf, MultiFab& aux_mf, int lev,
 #endif
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.nodaltilebox();
+    const Box& bx = mfi.tilebox();
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi);
     const auto& aux_fab = aux_mf.array(mfi);
-    const auto& mask_arr = nodal_mask -> array(mfi);
+    //const auto& mask_arr = nodal_mask -> array(mfi);
 
     // For each grid, loop over all the valid points
     amrex::ParallelFor(bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-      if (mask_arr(i, j, k))
-      {
+      //if (mask_arr(i, j, k))
+      //{
           state_update_momentum(i, j, k, state_fab, aux_fab, time, dx, geom.data(), Param.mass, Param.r, Param.beta, Param.use_dynamical_fermions, dtau);
-      }
+      //}
     });
   }
     
-  state_mf.OverrideSync(*nodal_mask, geom.periodicity());
+  //state_mf.OverrideSync(*nodal_mask, geom.periodicity());
   FillIntermediatePatch(lev, time, state_mf, 0, state_mf.nComp());
-  FlipSigns(lev, state_mf, Idx::Phi_0_Real, 4);
+  //FlipSigns(lev, state_mf, Idx::Phi_0_Real, 4);
     
 }
 
@@ -1738,7 +1772,7 @@ Real AmrCoreAdv::Total_Action(MultiFab& state_mf, MultiFab& aux_mf, int lev, Par
 
 Real AmrCoreAdv::Action_Gauge (MultiFab& state_mf, int lev, Real beta)
 {
-    auto& nodal_mask = grid_msk[lev];
+    //auto& nodal_mask = grid_msk[lev];
     
     ReduceOps<ReduceOpSum> reduce_operations;
     ReduceData<Real> reduce_data(reduce_operations);
@@ -1750,17 +1784,17 @@ Real AmrCoreAdv::Action_Gauge (MultiFab& state_mf, int lev, Real beta)
 
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.nodaltilebox();
+    const Box& bx = mfi.tilebox();
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi); 
-    const auto& mask_arr = nodal_mask -> array(mfi);
+    //const auto& mask_arr = nodal_mask -> array(mfi);
       
     // For each grid, loop over all the valid points
     reduce_operations.eval(bx, reduce_data,
     [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
     {
-        return {sum_action_gauge(i,j,k,state_fab, beta)*mask_arr(i, j, k)};
+        return {sum_action_gauge(i,j,k,state_fab, beta)};
     });
   }
     ReduceTuple reduced_values = reduce_data.value();
@@ -1773,7 +1807,7 @@ Real AmrCoreAdv::Action_Gauge (MultiFab& state_mf, int lev, Real beta)
 
 Real AmrCoreAdv::Action_Momentum (MultiFab& state_mf, int lev)
 {
-    auto& nodal_mask = grid_msk[lev];
+    //auto& nodal_mask = grid_msk[lev];
     
     ReduceOps<ReduceOpSum> reduce_operations;
     ReduceData<Real> reduce_data(reduce_operations);
@@ -1785,16 +1819,16 @@ Real AmrCoreAdv::Action_Momentum (MultiFab& state_mf, int lev)
 
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.nodaltilebox();
+    const Box& bx = mfi.tilebox();
     const auto ncomp = state_mf.nComp();
     const auto& state_fab = state_mf.array(mfi);
-    const auto& mask_arr = nodal_mask -> array(mfi);
+    //const auto& mask_arr = nodal_mask -> array(mfi);
 
     // For each grid, loop over all the valid points
     reduce_operations.eval(bx, reduce_data,
     [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
     {
-        return {sum_action_mom(i,j,k,state_fab)*mask_arr(i, j, k)};
+        return {sum_action_mom(i,j,k,state_fab)};
     });
   }
     ReduceTuple reduced_values = reduce_data.value();
@@ -1807,7 +1841,7 @@ Real AmrCoreAdv::Action_Momentum (MultiFab& state_mf, int lev)
 
 Real AmrCoreAdv::Action_Fermi (MultiFab& state_mf, MultiFab& aux_mf, int lev)
 {
-    auto& nodal_mask = grid_msk[lev];
+    //auto& nodal_mask = grid_msk[lev];
     
     ReduceOps<ReduceOpSum> reduce_operations;
     ReduceData<Real> reduce_data(reduce_operations);
@@ -1819,18 +1853,18 @@ Real AmrCoreAdv::Action_Fermi (MultiFab& state_mf, MultiFab& aux_mf, int lev)
 
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.nodaltilebox();
+    const Box& bx = mfi.tilebox();
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi); 
     const auto& aux_fab = aux_mf.array(mfi);
-    const auto& mask_arr = nodal_mask -> array(mfi);
+    //const auto& mask_arr = nodal_mask -> array(mfi);
 
     // For each grid, loop over all the valid points
     reduce_operations.eval(bx, reduce_data,
     [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
     {
-        return {sum_action_D(i,j,k,state_fab, aux_fab)*mask_arr(i, j, k)};
+        return {sum_action_D(i,j,k,state_fab, aux_fab)};
     });
   }
     ReduceTuple reduced_values = reduce_data.value();
@@ -1844,7 +1878,7 @@ Real AmrCoreAdv::Action_Fermi (MultiFab& state_mf, MultiFab& aux_mf, int lev)
 Real AmrCoreAdv::Test_Sum (MultiFab& state_mf, int lev)
 {
     
-    auto& nodal_mask = grid_msk[lev];
+    //auto& nodal_mask = grid_msk[lev];
 
     ReduceOps<ReduceOpSum> reduce_operations;
     ReduceData<Real> reduce_data(reduce_operations);
@@ -1856,17 +1890,17 @@ Real AmrCoreAdv::Test_Sum (MultiFab& state_mf, int lev)
 
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.nodaltilebox();
+    const Box& bx = mfi.tilebox();
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi);
-    const auto& mask_arr = nodal_mask -> array(mfi);
+    //const auto& mask_arr = nodal_mask -> array(mfi);
 
     // For each grid, loop over all the valid points
     reduce_operations.eval(bx, reduce_data,
     [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
     {
-        return {(i+j)*mask_arr(i, j, k)};
+        return {(i+j)};
     });
   }
     ReduceTuple reduced_values = reduce_data.value();
@@ -1883,7 +1917,7 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useI
     BL_PROFILE("BiCG_solve");
     amrex::Real alpha, beta, denom, rsq, rsq_new, bsqrt, bnorm;
     
-    auto& nodal_mask = grid_msk[lev];
+    //auto& nodal_mask = grid_msk[lev];
     
     const BoxArray& ba = x_mf.boxArray();
     
@@ -1893,10 +1927,11 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useI
     //mfU -> define(ba,dm,4,NUM_GHOST_CELLS);
     
     //MultiFab::Swap(*mfU, S_new, Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
-    
+
     MultiFab* mfres = new MultiFab;
     mfres -> define(ba,dm,4,NUM_GHOST_CELLS);
     
+    FillIntermediatePatch(lev, time, b_mf, 0, x_mf.nComp()); //new
     MultiFab::Copy(*mfres, b_mf, cIdx::Real_0, 0, 4, NUM_GHOST_CELLS);
     
     if(useInitGuess)
@@ -1926,7 +1961,7 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useI
     MultiFab* mfp = new MultiFab;
     mfp -> define(ba,dm,4,NUM_GHOST_CELLS);
     
-    
+    //FillIntermediatePatch(lev, time, *mfres, 0, x_mf.nComp()); //new
     MultiFab::Copy(*mfp, *mfres, cIdx::Real_0, cIdx::Real_0, 4, NUM_GHOST_CELLS);
     
     MultiFab* mfDp = new MultiFab;
@@ -1935,34 +1970,40 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useI
     MultiFab* mfDDp = new MultiFab;
     mfDDp -> define(ba,dm,4,NUM_GHOST_CELLS);
     
-    rsq = MultiFab::Dot(*nodal_mask, *mfres, cIdx::Real_0,  *mfres, cIdx::Real_0, 4, 0);
+    rsq = MultiFab::Dot(*mfres, cIdx::Real_0,  *mfres, cIdx::Real_0, 4, 0);
+    //amrex::Print() << rsq << std::endl;
     
     for(int i = 0; i < Param.BiCG_Max_Iters; i++)
     {
         
-        
-        Set_Dp(*mfDp, *mfp, U_mf, lev, time, Param);        
+        FillIntermediatePatch(lev, time, *mfp, 0, 4); //new
+        Set_Dp(*mfDp, *mfp, U_mf, lev, time, Param);
         Set_g3p(*mfDp, *mfDp, lev, time);
         
+        FillIntermediatePatch(lev, time, *mfDp, 0, 4); //new
         Set_Dp(*mfDDp, *mfDp, U_mf, lev, time, Param);
         Set_g3p(*mfDDp, *mfDDp, lev, time);
 
-        denom = MultiFab::Dot(*nodal_mask, *mfp, cIdx::Real_0, *mfDDp, cIdx::Real_0, 4, 0, false);
+        //FillIntermediatePatch(lev, time, *mfDDp, 0, 4); //new
+        denom = MultiFab::Dot(*mfp, cIdx::Real_0, *mfDDp, cIdx::Real_0, 4, 0);
+        
+        //amrex::Print() << denom << std::endl;
         
         alpha = rsq/denom;
-        
         MultiFab::Saxpy(x_mf, alpha, *mfp, cIdx::Real_0, cIdx::Real_0, 4, 0);
-        x_mf.OverrideSync(*nodal_mask, geom_lev.periodicity());
-        FillIntermediatePatch(lev, time, x_mf, 0, x_mf.nComp());
-        FlipSigns(lev, x_mf, cIdx::Real_0, 4);
+        //x_mf.OverrideSync(*nodal_mask, geom_lev.periodicity());
+        //FillIntermediatePatch(lev, time, x_mf, 0, x_mf.nComp());
+        //FlipSigns(lev, x_mf, cIdx::Real_0, 4);
         
         MultiFab::Saxpy(*mfres, -alpha, *mfDDp, cIdx::Real_0, cIdx::Real_0, 4, 0);
         
-        mfres -> OverrideSync(*nodal_mask, geom_lev.periodicity());
+        //amrex::Print() << MultiFab::Dot(*nodal_mask, *mfp, cIdx::Real_0, *mfp, cIdx::Real_0, 4, 0, false) << std::endl;
+        
+        //mfres -> OverrideSync(*nodal_mask, geom_lev.periodicity());
         FillIntermediatePatch(lev, time, *mfres, 0, mfres -> nComp());
-        FlipSigns(lev, *mfres, cIdx::Real_0, 4);
+        //FlipSigns(lev, *mfres, cIdx::Real_0, 4);
 
-        rsq_new = MultiFab::Dot(*nodal_mask, *mfres, cIdx::Real_0, *mfres, cIdx::Real_0, 4, 0);
+        rsq_new = MultiFab::Dot(*mfres, cIdx::Real_0, *mfres, cIdx::Real_0, 4, 0);
         
         if (rsq_new < Param.BiCG_Thresh)
             break;
@@ -1970,11 +2011,13 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useI
         beta = rsq_new/rsq;
         rsq = rsq_new;
         
+        amrex::Print() << rsq << std::endl;
+        
         MultiFab::LinComb(*mfp, beta, *mfp, cIdx::Real_0, 1.0, *mfres, cIdx::Real_0, cIdx::Real_0, 4, 0);
         
-        mfp -> OverrideSync(*nodal_mask, geom_lev.periodicity());
+        //mfp -> OverrideSync(*nodal_mask, geom_lev.periodicity());
         FillIntermediatePatch(lev, time, *mfp, 0, mfp -> nComp());
-        FlipSigns(lev, *mfp, cIdx::Real_0, 4);
+        //FlipSigns(lev, *mfp, cIdx::Real_0, 4);
         
         if (i == (Param.BiCG_Max_Iters - 1) && rsq_new > Param.BiCG_Thresh)
         {
@@ -1994,26 +2037,26 @@ AmrCoreAdv::BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useI
     delete mfDp;
     delete mfDDp;
     
-    x_mf.OverrideSync(*nodal_mask, geom_lev.periodicity());
+    //x_mf.OverrideSync(*nodal_mask, geom_lev.periodicity());
     FillIntermediatePatch(lev, time, x_mf, 0, x_mf.nComp());
-    FlipSigns(lev, x_mf, cIdx::Real_0, 4);
+    //FlipSigns(lev, x_mf, cIdx::Real_0, 4);
     
 }
 
 void AmrCoreAdv::Set_g3p (MultiFab& g3p_mf, MultiFab& p_mf, int lev, Real time)
 {
-    auto nodal_mask = p_mf.OwnerMask(geom[lev].periodicity());
+    //auto nodal_mask = p_mf.OwnerMask(geom[lev].periodicity());
     
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
   for ( MFIter mfi(p_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.nodaltilebox();
+    const Box& bx = mfi.tilebox();
 
     const auto& g3p_fab = g3p_mf.array(mfi);
     const auto& p_fab = p_mf.array(mfi);
-    const auto& mask_arr = nodal_mask->array(mfi);
+    //const auto& mask_arr = nodal_mask->array(mfi);
     
     amrex::ParallelFor(bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -2025,14 +2068,14 @@ void AmrCoreAdv::Set_g3p (MultiFab& g3p_mf, MultiFab& p_mf, int lev, Real time)
   }
     
     
-  g3p_mf.OverrideSync(*nodal_mask, geom[lev].periodicity());
-  FillIntermediatePatch(lev, time, g3p_mf, 0, g3p_mf.nComp());
-  FlipSigns(lev, g3p_mf, cIdx::Real_0, 4);
+  //g3p_mf.OverrideSync(*nodal_mask, geom[lev].periodicity());
+  //FillIntermediatePatch(lev, time, g3p_mf, 0, g3p_mf.nComp());
+  //FlipSigns(lev, g3p_mf, cIdx::Real_0, 4);
 }
 
 void AmrCoreAdv::Set_g3DinvPhi (MultiFab& state_mf, MultiFab& aux_mf, const Geometry& geom, int lev, amrex::Real time, amrex::Real m_0, amrex::Real r)
 {
-    auto nodal_mask = state_mf.OwnerMask(geom.periodicity());
+    //auto nodal_mask = state_mf.OwnerMask(geom.periodicity());
     const auto dx = geom.CellSizeArray();
     int ncomp = state_mf.nComp();
     
@@ -2041,12 +2084,12 @@ void AmrCoreAdv::Set_g3DinvPhi (MultiFab& state_mf, MultiFab& aux_mf, const Geom
 #endif
   for ( MFIter mfi(state_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.nodaltilebox();
+    const Box& bx = mfi.tilebox();
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi);
     const auto& aux_fab = aux_mf.array(mfi);
-    const auto& mask_arr = nodal_mask->array(mfi);
+    //const auto& mask_arr = nodal_mask->array(mfi);
     
     amrex::ParallelFor(bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -2057,9 +2100,9 @@ void AmrCoreAdv::Set_g3DinvPhi (MultiFab& state_mf, MultiFab& aux_mf, const Geom
       
   }
   
-  aux_mf.OverrideSync(*nodal_mask, geom.periodicity());  
+  //aux_mf.OverrideSync(*nodal_mask, geom.periodicity());  
   FillIntermediatePatch(lev, time, aux_mf, 0, aux_mf.nComp());
-  FlipSigns(lev, aux_mf, 0, aux_mf.nComp());
+  //FlipSigns(lev, aux_mf, 0, aux_mf.nComp());
 }
 
 
@@ -2068,20 +2111,20 @@ void AmrCoreAdv::Set_Dp (MultiFab& Dp_mf, MultiFab& p_mf, MultiFab& U_mf, int le
     //const auto dx = geom.CellSizeArray();
     //int ncomp = U_mf.nComp();
     
-    auto nodal_mask = p_mf.OwnerMask(geom[lev].periodicity());
+    //auto nodal_mask = p_mf.OwnerMask(geom[lev].periodicity());
     
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
   for ( MFIter mfi(U_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.nodaltilebox();
+    const Box& bx = mfi.tilebox();
     const auto ncomp = U_mf.nComp();
 
     const auto& Dp_fab = Dp_mf.array(mfi);
     const auto& p_fab = p_mf.array(mfi); 
     const auto& U_fab = U_mf.array(mfi);
-    const auto& mask_arr = nodal_mask->array(mfi);
+    //const auto& mask_arr = nodal_mask->array(mfi);
     
     
     amrex::ParallelFor(bx,
@@ -2093,24 +2136,24 @@ void AmrCoreAdv::Set_Dp (MultiFab& Dp_mf, MultiFab& p_mf, MultiFab& U_mf, int le
       
   }
   
-  Dp_mf.OverrideSync(*nodal_mask, geom[lev].periodicity());
-  FillIntermediatePatch(lev, time, Dp_mf, 0, Dp_mf.nComp());
-  FlipSigns(lev, Dp_mf, cIdx::Real_0, 4);
+  //Dp_mf.OverrideSync(*nodal_mask, geom[lev].periodicity());
+  //FillIntermediatePatch(lev, time, Dp_mf, 0, Dp_mf.nComp());
+  //FlipSigns(lev, Dp_mf, cIdx::Real_0, 4);
     
 }
 
 void AmrCoreAdv::smear_gauge (MultiFab& smearedU_mf, MultiFab& U_mf, int lev, const amrex::Real time, Parameters Param)
 {
     
-    auto nodal_mask = U_mf.OwnerMask(geom[lev].periodicity());
+    //auto nodal_mask = U_mf.OwnerMask(geom[lev].periodicity());
     //const auto dx = geom.CellSizeArray();
     //int ncomp = state_mf.nComp();
     
-    const Box& domain_bx = surroundingNodes(geom[lev].Domain());
+    const Box& domain_bx = geom[lev].Domain();
     
     const BoxArray& ba = U_mf.boxArray();
     BoxArray nba = ba;
-    nba.surroundingNodes();
+    //nba.surroundingNodes();
     const DistributionMapping& dm = U_mf.DistributionMap();
     
     MultiFab* smearedU_tmp_mf = new MultiFab;
@@ -2129,7 +2172,7 @@ void AmrCoreAdv::smear_gauge (MultiFab& smearedU_mf, MultiFab& U_mf, int lev, co
 
       for ( MFIter mfi(smearedU_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
       {
-        const Box& bx = mfi.nodaltilebox();
+        const Box& bx = mfi.tilebox();
         //const auto ncomp = state_mf.nComp();
     
         const auto& U_fab = U_mf.array(mfi);
@@ -2144,7 +2187,7 @@ void AmrCoreAdv::smear_gauge (MultiFab& smearedU_mf, MultiFab& U_mf, int lev, co
         });
       }
       
-      smearedU_tmp_mf -> OverrideSync(*nodal_mask, geom[lev].periodicity());
+      //smearedU_tmp_mf -> OverrideSync(*nodal_mask, geom[lev].periodicity());
       FillIntermediatePatch(lev, time, *smearedU_tmp_mf, 0, 4);
         
       for ( MFIter mfi(smearedU_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
@@ -2165,7 +2208,7 @@ void AmrCoreAdv::smear_gauge (MultiFab& smearedU_mf, MultiFab& U_mf, int lev, co
     }
     
     delete smearedU_tmp_mf;
-    smearedU_mf.OverrideSync(*nodal_mask, geom[lev].periodicity());
+    //smearedU_mf.OverrideSync(*nodal_mask, geom[lev].periodicity());
     FillIntermediatePatch(lev, time, smearedU_mf, 0, 4);
   
 }
@@ -2173,11 +2216,11 @@ void AmrCoreAdv::smear_gauge (MultiFab& smearedU_mf, MultiFab& U_mf, int lev, co
 Real AmrCoreAdv::meas_TopCharge (MultiFab& U_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param)
 {
     
-    auto& nodal_mask = grid_msk[lev];
+    //auto& nodal_mask = grid_msk[lev];
     
     const BoxArray& ba = U_mf.boxArray();
     BoxArray nba = ba;
-    nba.surroundingNodes();
+    //nba.surroundingNodes();
     
     const DistributionMapping& dm = U_mf.DistributionMap();
     
@@ -2196,17 +2239,17 @@ Real AmrCoreAdv::meas_TopCharge (MultiFab& U_mf, int lev, const amrex::Real time
 
   for ( MFIter mfi(U_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.nodaltilebox();
+    const Box& bx = mfi.tilebox();
     Dim3 hi = ubound(bx);
 
     const auto& smeared_fab = smearedU_mf -> array(mfi);
-    const auto& mask_arr = nodal_mask->array(mfi);
+    //const auto& mask_arr = nodal_mask->array(mfi);
 
     // For each grid, loop over all the valid points
     reduce_operations.eval(bx, reduce_data,
     [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
     {
-        return {mask_arr(i, j, k)*state_TopCharge(i,j,k,smeared_fab)};
+        return {state_TopCharge(i,j,k,smeared_fab)};
     });
   }
     ReduceTuple reduced_values = reduce_data.value();
@@ -2225,7 +2268,7 @@ void AmrCoreAdv::meas_WilsonLoops(MultiFab& U_mf, int lev, amrex::Real time, con
     
     const BoxArray& ba = U_mf.boxArray();
     BoxArray nba = ba;
-    nba.surroundingNodes();
+    //nba.surroundingNodes();
     
 
     const DistributionMapping& dm = U_mf.DistributionMap();
@@ -2236,12 +2279,12 @@ void AmrCoreAdv::meas_WilsonLoops(MultiFab& U_mf, int lev, amrex::Real time, con
     smear_gauge(smearedU_mf, U_mf, lev, time, Param);
      
     Box domain_bx = geom.Domain();
-    domain_bx.surroundingNodes();
+    //domain_bx.surroundingNodes();
     
     const BoxArray domain_ba(domain_bx);
     
     BoxArray domain_nba = domain_ba;
-    domain_nba.surroundingNodes();
+    //domain_nba.surroundingNodes();
     
 
     DistributionMapping domain_dm{domain_nba};
@@ -2375,7 +2418,7 @@ void AmrCoreAdv::meas_WilsonLoops(MultiFab& U_mf, int lev, amrex::Real time, con
 
 Real AmrCoreAdv::Measure_Plaq (MultiFab& U_mf, int lev)
 {
-    auto& nodal_mask = grid_msk[lev];
+    //auto& nodal_mask = grid_msk[lev];
     
     ReduceOps<ReduceOpSum> reduce_operations;
     ReduceData<Real> reduce_data(reduce_operations);
@@ -2387,17 +2430,17 @@ Real AmrCoreAdv::Measure_Plaq (MultiFab& U_mf, int lev)
 
   for ( MFIter mfi(U_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
   {
-    const Box& bx = mfi.nodaltilebox();
+    const Box& bx = mfi.tilebox();
     const auto ncomp = U_mf.nComp();
 
     const auto& U_fab = U_mf.array(mfi); 
-    const auto& mask_arr = nodal_mask -> array(mfi);
+    //const auto& mask_arr = nodal_mask -> array(mfi);
 
     // For each grid, loop over all the valid points
     reduce_operations.eval(bx, reduce_data,
     [=] AMREX_GPU_DEVICE (const int i, const int j, const int k) -> ReduceTuple
     {
-        return {mask_arr(i, j, k)*sum_plaq(i,j,k,U_fab)/(numcells[0]*numcells[1])};
+        return {sum_plaq(i,j,k,U_fab)/(numcells[0]*numcells[1])};
     });
   }
     ReduceTuple reduced_values = reduce_data.value();
@@ -2411,11 +2454,11 @@ Real AmrCoreAdv::Measure_Plaq (MultiFab& U_mf, int lev)
 void AmrCoreAdv::PionCorrelation (MultiFab& U_mf, int lev, const Real time_lev, const amrex::Geometry& geom, Parameters Param, amrex::Vector<double>& picorr, std::ofstream& PiCorr)
 {
     
-    auto& nodal_mask = grid_msk[lev];
+    //auto& nodal_mask = grid_msk[lev];
     
     const BoxArray& ba = U_mf.boxArray();
     BoxArray nba = ba;
-    nba.surroundingNodes();
+    //nba.surroundingNodes();
     const DistributionMapping& dm = U_mf.DistributionMap();
     
     /*
@@ -2440,11 +2483,11 @@ void AmrCoreAdv::PionCorrelation (MultiFab& U_mf, int lev, const Real time_lev, 
     
     for ( MFIter mfi(source_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
     {
-        const Box& bx = mfi.nodaltilebox();
+        const Box& bx = mfi.tilebox();
         const auto ncomp = U_mf.nComp();
 
         const auto& source_fab = source_mf.array(mfi); 
-        const auto& mask_arr = nodal_mask -> array(mfi);
+        //const auto& mask_arr = nodal_mask -> array(mfi);
         
         //source_fab(0, 0, 0, cIdx::Real_0) = 1;
         //source_fab(0, 0, 1, cIdx::Real_0) = 1;
@@ -2452,7 +2495,7 @@ void AmrCoreAdv::PionCorrelation (MultiFab& U_mf, int lev, const Real time_lev, 
         amrex::ParallelFor(bx,
         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            if(i == 0 && j == 0 && mask_arr(i, j, k))
+            if(i == 0 && j == 0 /*&& mask_arr(i, j, k)*/)
               source_fab(i, j, k, cIdx::Real_0) = 1;
         });
         
@@ -2476,11 +2519,11 @@ void AmrCoreAdv::PionCorrelation (MultiFab& U_mf, int lev, const Real time_lev, 
     
     for ( MFIter mfi(source_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi )
     {
-        const Box& bx = mfi.nodaltilebox();
+        const Box& bx = mfi.tilebox();
         const auto ncomp = U_mf.nComp();
 
         const auto& source_fab = source_mf.array(mfi); 
-        const auto& mask_arr = nodal_mask -> array(mfi);
+        //const auto& mask_arr = nodal_mask -> array(mfi);
         
         //source_fab(0, 0, 0, cIdx::Real_1) = 1;
         //source_fab(0, 0, 1, cIdx::Real_1) = 1;
@@ -2488,7 +2531,7 @@ void AmrCoreAdv::PionCorrelation (MultiFab& U_mf, int lev, const Real time_lev, 
         amrex::ParallelFor(bx,
         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            if(i == 0 && j == 0 && mask_arr(i, j, k))
+            if(i == 0 && j == 0 /*&& mask_arr(i, j, k)*/)
               source_fab(i, j, k, cIdx::Real_1) = 1;
             
         });
@@ -2508,7 +2551,7 @@ void AmrCoreAdv::PionCorrelation (MultiFab& U_mf, int lev, const Real time_lev, 
     const Box& domain_bx = geom.Domain();
     const BoxArray domain_ba(&domain_bx, 1);
     BoxArray domain_nba = domain_ba;
-    domain_nba.surroundingNodes();
+    //domain_nba.surroundingNodes();
     
     
     DistributionMapping domain_dm {domain_nba};

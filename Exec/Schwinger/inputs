@@ -1,47 +1,47 @@
 # Stopping Criteria
-max_step = 10201
-num_therm_steps = 100
-starting_measurements_step = 200
+max_step = 30
+num_therm_steps = 10
+starting_measurements_step = 20
 stop_time = 2000000.0
 
-num_hmc_substeps = 10
+num_hmc_substeps = 25
 
 hmc_tau = 1.0
  
-coupling_beta = 2.0
+coupling_beta = 5.0
 mass_0 = 0.1
 wilson_r = 1.0
 Temp_T = 1.0
 
-Use_Dynamical_Fermions = 1
+Use_Dynamical_Fermions = 0
 
 BiCGThresh = 1e-16
-BiCG_Max_Iter = 10000
+BiCG_Max_Iter = 10
 Use_BiCG_Stab = 0
 
-APE_iter = 1
+APE_iter = 0
 APE_alpha = 0.5 
 
 measWilsonLoops_Interval = 100
 CheckReversedTrajectoryInterval = 1000
 
 # Problem Size & Geometry 
-amr.n_cell = 32 32
+amr.n_cell = 64 64
 
 geometry.is_periodic = 1 1 
 geometry.coord_sys = 0 
-geometry.prob_lo = -16.0 -16.0 #-20.9805 -20.9805 -20.9805 
-geometry.prob_hi = 16.0 16.0 #20.9805 20.9805 20.9805 
+geometry.prob_lo = -32.0 -32.0 #-20.9805 -20.9805 -20.9805 
+geometry.prob_hi = 32.0 32.0 #20.9805 20.9805 20.9805 
 
 # Turn on verbosity in amr 
 amr.v = 1
 
 # Refinement Parameters 
 amr.max_level = 0
-amr.max_grid_size = 16
+amr.max_grid_size = 32
 amr.ref_ratio = 2
 amr.n_error_buf = 1
-amr.blocking_factor = 8
+amr.blocking_factor = 2
 amr.regrid_int = 1
 
 # AMR Interpolation 

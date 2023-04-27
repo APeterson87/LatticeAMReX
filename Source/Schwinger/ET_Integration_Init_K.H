@@ -18,8 +18,8 @@ state_init(int i, int j, int k,
         amrex::Real x1 = (j + 0.5)*geom.CellSize(1) + domain_xlo[1]; 
 
         
-        amrex::Real theta_0 = 2*M_PI*(amrex::Random()-0.5);
-        amrex::Real theta_1 = 2*M_PI*(amrex::Random()-0.5);
+        amrex::Real theta_0 = M_PI/4*(amrex::Random()-0.5);
+        amrex::Real theta_1 = M_PI/4*(amrex::Random()-0.5);
         
         amrex::Real P_0 = amrex::RandomNormal(0,1);
         amrex::Real P_1 = amrex::RandomNormal(0,1);
@@ -31,6 +31,11 @@ state_init(int i, int j, int k,
 
         state_fab(i, j, k, Idx::P_0) = P_0;
         state_fab(i, j, k, Idx::P_1) = P_1;
+        
+        state_fab(i, j, k, Idx::Phi_0_Real) = amrex::RandomNormal(0,1)/std::sqrt(2);
+        state_fab(i, j, k, Idx::Phi_0_Imaginary) = amrex::RandomNormal(0,1)/std::sqrt(2);
+        state_fab(i, j, k, Idx::Phi_1_Real) = amrex::RandomNormal(0,1)/std::sqrt(2);
+        state_fab(i, j, k, Idx::Phi_1_Imaginary) = amrex::RandomNormal(0,1)/std::sqrt(2);
         
         
 }
