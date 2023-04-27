@@ -12,7 +12,7 @@ mass_0 = 0.1
 wilson_r = 1.0
 Temp_T = 1.0
 
-Use_Dynamical_Fermions = 0
+Use_Dynamical_Fermions = 1
 BiCGThresh = 1e-16
 BiCG_Max_Iter = 10000
 Use_BiCG_Stab = 0
