@@ -72,7 +72,8 @@ inline
 amrex::Real
 sum_action_D(const int i, const int j, const int k, 
         amrex::Array4<amrex::Real> const& state_fab,
-        amrex::Array4<amrex::Real> const& aux_fab) 
+        amrex::Array4<amrex::Real> const& aux_fab,
+        const amrex::GeometryData& geom) 
 {
         
         amrex::Real PhiDDinvPhi_0_r = state_fab(i, j, k, Idx::Phi_0_Real)*aux_fab(i, j, k, auxIdx::DDinvPhi_0_Real); 

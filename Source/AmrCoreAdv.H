@@ -216,7 +216,7 @@ private:
     void StateAction (amrex::Vector<amrex::MultiFab>& state, Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param);
     
     void Trajectory(MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
-    void StateTrajectory(amrex::Vector<amrex::MultiFab>& state, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param);
+    void StateTrajectory(amrex::Vector<amrex::MultiFab>& state, amrex::Vector<amrex::MultiFab>& aux, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param);
     
     void update_momentum (MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
     
@@ -253,11 +253,12 @@ private:
     //amrex::Real Action_Fermi_From_Chi (MultiFab& state_mf);
     
     
-    Real Total_Action_Lev (amrex::Vector<amrex::MultiFab>& state, const amrex::Vector<amrex::Geometry>& geom, Parameters Param, int high_lev);
+    Real Total_Action_Lev (amrex::Vector<amrex::MultiFab>& state, amrex::Vector<amrex::MultiFab>& aux, const amrex::Vector<amrex::Geometry>& geom, Parameters Param, int high_lev);
     Real Total_Gauge_Action_Lev(amrex::Vector<amrex::MultiFab>& state, const amrex::Vector<amrex::Geometry>& geom, Parameters Param, int high_lev);
     Real Total_Momentum_Action_Lev(amrex::Vector<amrex::MultiFab>& state, const amrex::Vector<amrex::Geometry>& geom, Parameters Param, int high_lev);
     Real Action_Gauge_Lev (amrex::Vector<amrex::MultiFab>& state, int lev, const amrex::Geometry& geom, Parameters Param);
     Real Action_Momentum_Lev (amrex::Vector<amrex::MultiFab>& state, int lev, const amrex::Geometry& geom);
+    Real Action_Fermi_Lev (amrex::Vector<amrex::MultiFab>& state, amrex::Vector<amrex::MultiFab>& aux, int lev, const amrex::Geometry& geom, Parameters Param);
     
     Real meas_TopCharge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
     
