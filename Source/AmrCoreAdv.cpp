@@ -37,6 +37,7 @@ AmrCoreAdv::AmrCoreAdv ()
     //integrator.resize(nlevs_max);
 
     bcs.resize(Idx::NumScalars);
+    bcs_aux.resize(auxIdx::NumScalars);
 
     // boundary conditions
     for (int n = 0; n < Idx::NumScalars; ++n)
@@ -53,6 +54,24 @@ AmrCoreAdv::AmrCoreAdv ()
             {
                 bcs[n].setLo(i, domain_lo_bc_types[i]);
                 bcs[n].setHi(i, domain_hi_bc_types[i]);
+            }
+        }
+    }
+    
+    for (int n = 0; n < auxIdx::NumScalars; ++n)
+    {
+        for (int i = 0; i < AMREX_SPACEDIM; ++i)
+        {
+            // is_periodic overrides inputs in domain_(lo/hi)_bc_type
+            if (Geom(0).isPeriodic(i))
+            {
+                bcs_aux[n].setLo(i, BCType::int_dir);
+                bcs_aux[n].setHi(i, BCType::int_dir);
+            }
+            else
+            {
+                bcs_aux[n].setLo(i, domain_lo_bc_types[i]);
+                bcs_aux[n].setHi(i, domain_hi_bc_types[i]);
             }
         }
     }
@@ -143,7 +162,7 @@ AmrCoreAdv::Evolve ()
     
     amrex::Print() << std:: endl << "**********************************************" << std::endl << std::endl;
     
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    //std::this_thread::sleep_for(std::chrono::seconds(2));
     
     std::ofstream ActionLev0("ActionLev0.dat");
     std::ofstream ActionLev1("ActionLev1.dat");
@@ -168,7 +187,7 @@ AmrCoreAdv::Evolve ()
         int iteration = 1;
         
         timeStepRegrid(lev, cur_time, iteration, Param);
-        StateAction(grid_new, cur_time, geom, Param);
+        //StateAction(grid_new, cur_time, geom, Param);
         
         for (int level = 0; level <= finest_level; ++level) {
             //Copy U and P into grid_hold
@@ -177,32 +196,50 @@ AmrCoreAdv::Evolve ()
 
 	// Fill `grid_new` with random values.
         StatePerturb(grid_new, cur_time, geom, Param);
-
+        
+        if(Param.use_dynamical_fermions)
+        {
+            State_BiCG_Solve(grid_aux, grid_new, cur_time, geom, Param);
+        
+            for(int lev = finest_level; lev >= 0; lev--) {
+                FillPatch(lev, cur_time, grid_new[lev], 0, grid_new[lev].nComp());
+                FillPatchAux(lev, cur_time, grid_aux[lev], 0, grid_aux[lev].nComp());
+                Set_g3DinvPhi(grid_new[lev], grid_aux[lev], geom[lev], lev, cur_time, Param.mass, Param.r);
+            }
+        }
         amrex::Print() << std::endl << "*************** OLD STATE DATA ***************" << std::endl;  
         
+
         for(int lev = finest_level; lev >= 0; lev--) {
             FillPatch(lev, cur_time, grid_new[lev], 0, grid_new[lev].nComp());
             FillPatchAux(lev, cur_time, grid_aux[lev], 0, grid_aux[lev].nComp());
         }
+
         
         Real HTotalcurrentLev = Total_Action_Lev(grid_new, grid_aux, geom, Param, finest_level); 
         amrex::Print() << "**********************************************" << std::endl << std::endl;
-
-	amrex::Print() << std::endl << "****************** DO MCMC *******************" << std::endl;
-        StateTrajectory(grid_new, grid_aux, cur_time, geom, Param);
         
-        /*
-        if(istep[0] == 30)
+        StateTrajectory(grid_new, grid_aux, cur_time, geom, Param);
+
+	
+        
+
+        
+        /*if ((int)std::round(cur_time)%100 < 10)
+            amrex::Print() << "HELLO!" << std::endl;*/
+        /*if(istep[0] == 30)
         {
             amrex::Print() << "Doing BiCG Solver" << std::endl;
             for(int lev = finest_level; lev >= 0; lev--) {
-                FillPatch(lev, cur_time, grid_new[lev], Idx::Phi_0_Real, 4);
-                FillPatch(lev, cur_time, grid_new[lev], Idx::U_0_Real, 4);
+                //FillPatch(lev, cur_time, grid_new[lev], Idx::Phi_0_Real, 4);
+                //FillPatch(lev, cur_time, grid_new[lev], Idx::U_0_Real, 4);
                 
             }
             State_BiCG_Solve(grid_aux, grid_new, cur_time, geom, Param);
-        }
-        */
+            
+            //BiCG_Solve(grid_aux[1], grid_new[1], 1, cur_time, geom[1], Param);
+        }*/
+        
         
         amrex::Print() << std::endl;
         
@@ -214,7 +251,8 @@ AmrCoreAdv::Evolve ()
         Real HTotalLev = Total_Action_Lev(grid_new, grid_aux, geom, Param, finest_level);
         amrex::Print() << "**********************************************" << std::endl;
         
-        Real r_loc = std::rand()/(static_cast <float> (RAND_MAX));        
+        Real r_loc = std::rand()/(static_cast <float> (RAND_MAX));  
+        amrex::Print() << std::endl << "****************** DO MCMC *******************" << std::endl;
         amrex::Print() << "Metropolis random number = " << r_loc << std::endl;
         amrex::Print() << "Exp(-deltaH/T) = " << std::exp(-(HTotalLev-HTotalcurrentLev)/Temp_T) << std::endl;
         amrex::Print() << "deltaHLev = " << HTotalLev - HTotalcurrentLev << std::endl;
@@ -241,7 +279,7 @@ AmrCoreAdv::Evolve ()
         Real originalMAction = Total_Momentum_Action_Lev(grid_new, geom, Param, finest_level);
         Real originalTotAction = originalGAction + originalMAction;
         
-        ActionLev1 << originalGAction << ' ' << originalMAction << ' ' << originalTotAction << std::endl;
+        ActionLev1 << originalGAction << ' ' << originalMAction << ' ' << originalTotAction << ' ' << HTotalLev << std::endl;
         
         
         const BoxArray& ba_lev = grid_new[1].boxArray();    
@@ -493,7 +531,9 @@ void AmrCoreAdv::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& ba
       });
     }
     
-    FillPatch(lev, time, state, 0, state.nComp());  //Perhaps find a new place for this.
+    state.FillBoundary(geom.periodicity());
+    
+    //FillPatch(lev, time, state, 0, state.nComp());  //Perhaps find a new place for this.
     
 #ifdef _OPENMP
 #pragma omp parallel
@@ -512,7 +552,9 @@ void AmrCoreAdv::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& ba
       });
     }
     
-    FillPatchAux(lev, time, aux_state, 0, aux_state.nComp());  //Perhaps find a new place for this.
+    aux_state.FillBoundary(geom.periodicity());
+    
+    //FillPatchAux(lev, time, aux_state, 0, aux_state.nComp());  //Perhaps find a new place for this.
     
     
 }
@@ -859,6 +901,7 @@ AmrCoreAdv::FillPatch (int lev, Real time, MultiFab& mf, int icomp, int ncomp)
 void
 AmrCoreAdv::FillPatchAux (int lev, Real time, MultiFab& mf, int icomp, int ncomp)
 {
+    
     if (lev == 0)
     {
         Vector<MultiFab*> smf;
@@ -868,7 +911,7 @@ AmrCoreAdv::FillPatchAux (int lev, Real time, MultiFab& mf, int icomp, int ncomp
         if(Gpu::inLaunchRegion())
         {
             GpuBndryFuncFab<AmrCoreFillGpu> gpu_bndry_func(AmrCoreFillGpu{});
-            PhysBCFunct<GpuBndryFuncFab<AmrCoreFillGpu> > physbc(geom[lev],bcs,gpu_bndry_func);
+            PhysBCFunct<GpuBndryFuncFab<AmrCoreFillGpu> > physbc(geom[lev],bcs_aux,gpu_bndry_func);
             //! make sure this is passing the right bc
             amrex::FillPatchSingleLevel(mf, time, smf, stime, 0, icomp, ncomp, 
                                         geom[lev], physbc, 0);
@@ -876,7 +919,7 @@ AmrCoreAdv::FillPatchAux (int lev, Real time, MultiFab& mf, int icomp, int ncomp
         else
         {
             CpuBndryFuncFab bndry_func(&AmrCoreFillCpu);  // Without EXT_DIR, we can pass a nullptr.
-            PhysBCFunct<CpuBndryFuncFab> physbc(geom[lev],bcs,bndry_func);
+            PhysBCFunct<CpuBndryFuncFab> physbc(geom[lev],bcs_aux,bndry_func);
             //! make sure this is passing the right bc
             amrex::FillPatchSingleLevel(mf, time, smf, stime, 0, icomp, ncomp, 
                                         geom[lev], physbc, 0);
@@ -892,28 +935,30 @@ AmrCoreAdv::FillPatchAux (int lev, Real time, MultiFab& mf, int icomp, int ncomp
         if(Gpu::inLaunchRegion())
         {
             GpuBndryFuncFab<AmrCoreFillGpu> gpu_bndry_func(AmrCoreFillGpu{});
-            PhysBCFunct<GpuBndryFuncFab<AmrCoreFillGpu> > cphysbc(geom[lev-1],bcs,gpu_bndry_func);
-            PhysBCFunct<GpuBndryFuncFab<AmrCoreFillGpu> > fphysbc(geom[lev],bcs,gpu_bndry_func);
+            PhysBCFunct<GpuBndryFuncFab<AmrCoreFillGpu> > cphysbc(geom[lev-1],bcs_aux,gpu_bndry_func);
+            PhysBCFunct<GpuBndryFuncFab<AmrCoreFillGpu> > fphysbc(geom[lev],bcs_aux,gpu_bndry_func);
 
             //! make sure this is passing the right bc
             amrex::FillPatchTwoLevels(mf, time, cmf, ctime, fmf, ftime,
                                       0, icomp, ncomp, geom[lev-1], geom[lev],
                                       cphysbc, 0, fphysbc, 0, refRatio(lev-1),
-                                      mapper_aux, bcs, 0);
+                                      mapper_aux, bcs_aux, 0);
         }
         else
         {
             CpuBndryFuncFab bndry_func(&AmrCoreFillCpu);  // Without EXT_DIR, we can pass a nullptr.
-            PhysBCFunct<CpuBndryFuncFab> cphysbc(geom[lev-1],bcs,bndry_func);
-            PhysBCFunct<CpuBndryFuncFab> fphysbc(geom[lev],bcs,bndry_func);
+            PhysBCFunct<CpuBndryFuncFab> cphysbc(geom[lev-1],bcs_aux,bndry_func);
+            PhysBCFunct<CpuBndryFuncFab> fphysbc(geom[lev],bcs_aux,bndry_func);
 
             //! make sure this is passing the right bc
             amrex::FillPatchTwoLevels(mf, time, cmf, ctime, fmf, ftime,
                                       0, icomp, ncomp, geom[lev-1], geom[lev],
                                       cphysbc, 0, fphysbc, 0, refRatio(lev-1),
-                                      mapper_aux, bcs, 0);
+                                      mapper_aux, bcs_aux, 0);
         }
+
     }
+    mf.FillBoundary(geom[lev].periodicity());
 }
 
 
@@ -1117,24 +1162,24 @@ AmrCoreAdv::FillCoarsePatchAux (int lev, Real time, MultiFab& mf, int icomp, int
     if(Gpu::inLaunchRegion())
     {
         GpuBndryFuncFab<AmrCoreFillGpu> gpu_bndry_func(AmrCoreFillGpu{});
-        PhysBCFunct<GpuBndryFuncFab<AmrCoreFillGpu> > cphysbc(geom[lev-1],bcs,gpu_bndry_func);
-        PhysBCFunct<GpuBndryFuncFab<AmrCoreFillGpu> > fphysbc(geom[lev],bcs,gpu_bndry_func);
+        PhysBCFunct<GpuBndryFuncFab<AmrCoreFillGpu> > cphysbc(geom[lev-1],bcs_aux,gpu_bndry_func);
+        PhysBCFunct<GpuBndryFuncFab<AmrCoreFillGpu> > fphysbc(geom[lev],bcs_aux,gpu_bndry_func);
 
         //! make sure this is passing the right bc
         amrex::InterpFromCoarseLevel(mf, time, *cmf[0], 0, icomp, ncomp, geom[lev-1], geom[lev],
                                      cphysbc, 0, fphysbc, 0, refRatio(lev-1),
-                                     mapper_aux, bcs, 0);
+                                     mapper_aux, bcs_aux, 0);
     }
     else
     {
         CpuBndryFuncFab bndry_func(&AmrCoreFillCpu);  // Without EXT_DIR, we can pass a nullptr.
-        PhysBCFunct<CpuBndryFuncFab> cphysbc(geom[lev-1],bcs,bndry_func);
-        PhysBCFunct<CpuBndryFuncFab> fphysbc(geom[lev],bcs,bndry_func);
+        PhysBCFunct<CpuBndryFuncFab> cphysbc(geom[lev-1],bcs_aux,bndry_func);
+        PhysBCFunct<CpuBndryFuncFab> fphysbc(geom[lev],bcs_aux,bndry_func);
 
         //! make sure this is passing the right bc
         amrex::InterpFromCoarseLevel(mf, time, *cmf[0], 0, icomp, ncomp, geom[lev-1], geom[lev],
                                      cphysbc, 0, fphysbc, 0, refRatio(lev-1),
-                                     mapper_aux, bcs, 0);
+                                     mapper_aux, bcs_aux, 0);
     }
 }
 
@@ -1798,7 +1843,7 @@ void AmrCoreAdv::StatePerturb (amrex::Vector<amrex::MultiFab>& state, Real time,
       MultiFab::Swap(state[lev], phi_mf,  cIdx::Real_0, Idx::Phi_0_Real, 4, state[lev].nGrow());
       MultiFab::Swap(U_mf, state[lev], Idx::U_0_Real, cIdx::Real_0, 4, state[lev].nGrow());
         
-      FillPatch(lev, time, state[lev], 0, state[lev].nComp());  //Make sure ghost cells are now filled with phi = g3Dchi
+      //FillPatch(lev, time, state[lev], 0, state[lev].nComp());  //Make sure ghost cells are now filled with phi = g3Dchi
     }
     AverageDownNodal();
     
@@ -1816,22 +1861,26 @@ void AmrCoreAdv::StateAction (amrex::Vector<amrex::MultiFab>& state, Real time, 
 /* Evolve the `state` MF with one Leapfrog trajectory */
 void
 AmrCoreAdv::StateTrajectory(amrex::Vector<amrex::MultiFab>& state, amrex::Vector<amrex::MultiFab>& aux, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param) {
+
+  BL_PROFILE("StateTrajectory");
   
   for(int lev = finest_level; lev >= 0; lev--) {
     Real dtau = Param.hmc_tau_lev[lev]/Param.hmc_substeps;
     //Preping for the next step, FillPatches at each level. 
-    FillPatch(lev, time, state[lev], 0, state[lev].nComp());
-    update_momentum(state[lev], lev, time, geom[lev], Param, dtau/2.0);       
+    FillPatch(lev, time, state[lev], 0, 4);
+    if(Param.use_dynamical_fermions)
+        FillPatchAux(lev, time, aux[lev], auxIdx::DDinvPhi_0_Real, 8);
+    update_momentum(state[lev], aux[lev], lev, time, geom[lev], Param, dtau/2.0);       
   }
   AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
-    
+  
   for(int i = 1; i < Param.hmc_substeps; i++) {
     for(int lev = finest_level; lev >= 0; lev--) { //Update finer levels first.
       
       Real dtau = Param.hmc_tau_lev[lev]/Param.hmc_substeps;
       
       //Fill Ghost Cells right before I need them.  Less confusing/ambiguous.
-      FillPatch(lev, time, state[lev], 0, state[lev].nComp());
+      //FillPatch(lev, time, state[lev], 0, state[lev].nComp());
       update_gauge(state[lev], lev, time, geom[lev], Param, dtau);
     }
     AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
@@ -1846,14 +1895,18 @@ AmrCoreAdv::StateTrajectory(amrex::Vector<amrex::MultiFab>& state, amrex::Vector
           FillPatchAux(lev, time, aux[lev], 0, aux[lev].nComp());
           Set_g3DinvPhi(state[lev], aux[lev], geom[lev], lev, time, Param.mass, Param.r);
       }
-    } 
+    }
     
     
     for(int lev = finest_level; lev >= 0; lev--) { //Update finer levels first.
+      if( lev == 0)
+          break;
       Real dtau = Param.hmc_tau_lev[lev]/Param.hmc_substeps;
       
-      FillPatch(lev, time, state[lev], 0, state[lev].nComp());
-      update_momentum(state[lev], lev, time, geom[lev], Param, dtau);
+      FillPatch(lev, time, state[lev], 0, 4);
+      if(Param.use_dynamical_fermions)
+          FillPatchAux(lev, time, aux[lev], auxIdx::DDinvPhi_0_Real, 8);
+      update_momentum(state[lev], aux[lev], lev, time, geom[lev], Param, dtau);
     }
     AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
   }
@@ -1862,7 +1915,7 @@ AmrCoreAdv::StateTrajectory(amrex::Vector<amrex::MultiFab>& state, amrex::Vector
   for(int lev = finest_level; lev >= 0; lev--) {
     Real dtau = Param.hmc_tau_lev[lev]/Param.hmc_substeps;  
     
-    FillPatch(lev, time, state[lev], 0, state[lev].nComp());  //Preping for the next step, FillPatches at each level.
+    //FillPatch(lev, time, state[lev], 0, state[lev].nComp());  //Preping for the next step, FillPatches at each level.
     update_gauge(state[lev], lev, time, geom[lev], Param, dtau);
   }
   AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
@@ -1876,16 +1929,21 @@ AmrCoreAdv::StateTrajectory(amrex::Vector<amrex::MultiFab>& state, amrex::Vector
         FillPatchAux(lev, time, aux[lev], 0, aux[lev].nComp());
         Set_g3DinvPhi(state[lev], aux[lev], geom[lev], lev, time, Param.mass, Param.r);
     }
-  } 
+  }
     
   for(int lev = finest_level; lev >= 0; lev--) { //Update finer levels first.
+      if( lev == 0)
+          break;
     Real dtau = Param.hmc_tau_lev[lev]/Param.hmc_substeps;
     
-    FillPatch(lev, time, state[lev], 0, state[lev].nComp());
-    update_momentum(state[lev], lev, time, geom[lev], Param, dtau/2.0);
+    FillPatch(lev, time, state[lev], 0, 4);
+    if(Param.use_dynamical_fermions)
+        FillPatchAux(lev, time, aux[lev], auxIdx::DDinvPhi_0_Real, 8);
+    update_momentum(state[lev], aux[lev], lev, time, geom[lev], Param, dtau/2.0);
     
   }    
   AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
+  
 }
 
 void AmrCoreAdv::update_gauge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param, amrex::Real dtau)
@@ -1917,7 +1975,7 @@ void AmrCoreAdv::update_gauge (MultiFab& state_mf, int lev, const amrex::Real ti
   
 }
 
-void AmrCoreAdv::update_momentum (MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau)
+void AmrCoreAdv::update_momentum (MultiFab& state_mf, MultiFab& aux_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau)
 {
     
   const auto dx = geom.CellSizeArray();
@@ -1934,16 +1992,16 @@ void AmrCoreAdv::update_momentum (MultiFab& state_mf, int lev, const amrex::Real
     const auto ncomp = state_mf.nComp();
 
     const auto& state_fab = state_mf.array(mfi);
+    const auto& aux_fab = aux_mf.array(mfi);
 
     // For each grid, loop over all the valid points
     amrex::ParallelFor(bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-          state_update_momentum(i, j, k, state_fab, time, dx, geom.data(), Param.mass, Param.r, Param.beta_lev[lev], Param.use_dynamical_fermions, dtau);
+          state_update_momentum(i, j, k, state_fab, aux_fab, time, dx, geom.data(), Param.mass, Param.r, Param.beta_lev[lev], Param.use_dynamical_fermions, dtau);
     });
   }
 
-    
 }
 
 void AmrCoreAdv::update_action (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param)
@@ -2593,6 +2651,8 @@ Real AmrCoreAdv::meas_Total_TopCharge_Lev(amrex::Vector<amrex::MultiFab>& state,
 
 void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Vector<amrex::MultiFab>& state, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param)
 {
+    BL_PROFILE("State_BiCG_solve");
+    
     amrex::Vector<amrex::Real> rsq_arr(finest_level, 0);
     amrex::Vector<amrex::Real> rsq_new_arr(finest_level, 0);
     amrex::Vector<amrex::Real> denom_arr(finest_level, 0);
@@ -2602,6 +2662,10 @@ void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Ve
     for(int lev = finest_level; lev >= 0; lev--) {
         FillPatch(lev, time, state[lev], Idx::Phi_0_Real, 4);
         MultiFab::Copy(aux[lev], state[lev], Idx::Phi_0_Real, auxIdx::res_0_Real, 4, NUM_GHOST_CELLS);
+    }
+    
+    for(int lev = finest_level; lev >= 0; lev--) {
+        aux[lev].MultiFab::setVal(0, auxIdx::DDinvPhi_0_Real, 4, NUM_GHOST_CELLS);
     }
     
     for(int lev = finest_level; lev >= 0; lev--) {
@@ -2620,7 +2684,7 @@ void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Ve
         else
         {
             //rsq_arr[lev] = MultiFab::Dot(aux[lev], auxIdx::res_0_Real, aux[lev], auxIdx::res_0_Real, 4, 0);
-            rsq_arr[lev] = MultiFab::Dot(state[lev], Idx::Phi_0_Real, state[lev], Idx::Phi_0_Real, 4, 0);
+            rsq_arr[lev] = MultiFab::Dot(aux[lev], auxIdx::res_0_Real, aux[lev], auxIdx::res_0_Real, 4, 0);
         }
     }
     
@@ -2688,7 +2752,7 @@ void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Ve
                 BoxArray fba = state[lev+1].boxArray();
                 const iMultiFab& mask = makeFineMask(state[lev], fba, IntVect(2), 1, 0);
             
-                denom_arr[lev] = MultiFab::Dot(mask, aux[lev], auxIdx::DDp_0_Real, aux[lev], auxIdx::DDp_0_Real, 4, 0);
+                denom_arr[lev] = MultiFab::Dot(mask, aux[lev], auxIdx::p_0_Real, aux[lev], auxIdx::DDp_0_Real, 4, 0);
             }
             else
                 denom_arr[lev] = MultiFab::Dot(aux[lev], auxIdx::p_0_Real, aux[lev], auxIdx::DDp_0_Real, 4, 0);
@@ -2704,6 +2768,8 @@ void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Ve
             FillPatchAux(lev, time, aux[lev], auxIdx::p_0_Real, 4);
             MultiFab::Saxpy(aux[lev], alpha_arr[lev], aux[lev], auxIdx::p_0_Real, auxIdx::DDinvPhi_0_Real, 4, 0);
         }
+        
+        
         AverageDown();
         
         for(int lev = finest_level; lev >= 0; lev--) {    
@@ -2732,8 +2798,10 @@ void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Ve
             if(rsq_arr[lev] != 0) beta_arr[lev] = rsq_new_arr[lev]/rsq_arr[lev];
         }
         
+        //amrex::Print() << rsq_new_arr[1] << std::endl;
         
-        
+        if (rsq_new_arr[finest_level] < Param.BiCG_Thresh)
+            break;
 
         
         for(int lev = finest_level; lev >= 0; lev--) {
@@ -2745,9 +2813,11 @@ void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Ve
             
             MultiFab::LinComb(aux[lev], beta_arr[lev], aux[lev], auxIdx::p_0_Real, 1.0, aux[lev], auxIdx::res_0_Real, auxIdx::p_0_Real, 4, 0);
             
-            amrex::Print() << rsq_arr[lev] << std::endl;
+            //amrex::Print() << rsq_arr[lev] << " ";
         }
         AverageDown();
+        
+        //amrex::Print() << std::endl;
         
         if (i == (Param.BiCG_Max_Iters - 1) && rsq_new_arr[finest_level] > Param.BiCG_Thresh)
         {
@@ -2756,11 +2826,156 @@ void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Ve
             
         }
         
+        //amrex::Print() << "x_mf_norm = " << MultiFab::Dot(aux[1], auxIdx::DDinvPhi_0_Real, aux[1], auxIdx::DDinvPhi_0_Real, 4, 0) << std::endl;
+        
     }
     
     
     
+    
+    
 }
+
+void AmrCoreAdv::BiCG_Solve(amrex::MultiFab& aux_mf, amrex::MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param)
+{
+    amrex::Real rsq, rsq_new, denom, alpha, beta;
+    
+    FillPatch(lev, time, state_mf, Idx::Phi_0_Real, 4);
+    MultiFab::Copy(aux_mf, state_mf, Idx::Phi_0_Real, auxIdx::res_0_Real, 4, NUM_GHOST_CELLS);
+    
+    
+    
+    MultiFab::Copy(aux_mf, aux_mf, auxIdx::res_0_Real, auxIdx::p_0_Real, 4, NUM_GHOST_CELLS);
+    
+    if( lev != finest_level)
+    {
+        BoxArray fba = grid_new[lev+1].boxArray();
+        const iMultiFab& mask = makeFineMask(grid_new[lev], fba, IntVect(2), 1, 0);
+            
+        rsq = MultiFab::Dot(mask, aux_mf, auxIdx::res_0_Real, aux_mf, auxIdx::res_0_Real, 4, 0);
+    }
+    else
+    {
+        rsq = MultiFab::Dot(aux_mf, auxIdx::res_0_Real, aux_mf, auxIdx::res_0_Real, 4, 0);
+    }
+    
+    //amrex::Print() << rsq << std::endl;
+    
+    for(int i = 0; i < Param.BiCG_Max_Iters; i++)
+    {
+         FillPatchAux(lev, time, aux_mf, auxIdx::p_0_Real, 4);
+
+         MultiFab p_lev(aux_mf.boxArray(), aux_mf.DistributionMap(), 4, NUM_GHOST_CELLS);
+         MultiFab::Copy(p_lev, aux_mf, auxIdx::p_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+        
+         FillPatchAux(lev, time, aux_mf, auxIdx::Dp_0_Real, 4);
+
+         MultiFab Dp_lev(aux_mf.boxArray(), aux_mf.DistributionMap(), 4, NUM_GHOST_CELLS);
+         MultiFab::Copy(Dp_lev, aux_mf, auxIdx::Dp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+        
+
+         
+         FillPatch(lev, time, state_mf, Idx::U_0_Real, 4);
+         MultiFab U_lev(state_mf.boxArray(), state_mf.DistributionMap(), 4, NUM_GHOST_CELLS);
+         MultiFab::Copy(U_lev, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+
+         Set_Dp(Dp_lev, p_lev, U_lev, lev, time, Param);
+         Set_g3p(Dp_lev, Dp_lev, lev, time);
+         
+         
+         
+         MultiFab::Copy(aux_mf, p_lev, cIdx::Real_0, auxIdx::p_0_Real, 4, NUM_GHOST_CELLS);
+         MultiFab::Copy(aux_mf, Dp_lev, cIdx::Real_0, auxIdx::Dp_0_Real, 4, NUM_GHOST_CELLS);
+         MultiFab::Copy(state_mf, U_lev, cIdx::Real_0, Idx::U_0_Real, 4, NUM_GHOST_CELLS);
+        
+        
+
+         
+         FillPatchAux(lev, time, aux_mf, auxIdx::Dp_0_Real, 4);
+        
+         MultiFab::Copy(Dp_lev, aux_mf, auxIdx::Dp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+
+         MultiFab DDp_lev(aux_mf.boxArray(), aux_mf.DistributionMap(), 4, NUM_GHOST_CELLS);
+         MultiFab::Copy(DDp_lev, aux_mf, auxIdx::DDp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+         
+
+        
+         FillPatch(lev, time, state_mf, Idx::U_0_Real, 4);
+         MultiFab::Copy(U_lev, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+
+         
+         Set_Dp(DDp_lev, Dp_lev, U_lev, lev, time, Param);
+         Set_g3p(DDp_lev, DDp_lev, lev, time);
+        
+         //amrex::Print() << MultiFab::Dot(DDp_lev, cIdx::Real_0, DDp_lev, cIdx::Real_0, 4,  NUM_GHOST_CELLS) << " ";
+         //amrex::Print() << MultiFab::Dot(aux_mf, auxIdx::Dp_0_Real, aux_mf, auxIdx::Dp_0_Real, 4,  NUM_GHOST_CELLS) << std::endl;
+        
+
+         MultiFab::Copy(aux_mf, Dp_lev, cIdx::Real_0, auxIdx::Dp_0_Real, 4, NUM_GHOST_CELLS);
+         MultiFab::Copy(aux_mf, DDp_lev, cIdx::Real_0, auxIdx::DDp_0_Real, 4, NUM_GHOST_CELLS);
+         MultiFab::Copy(state_mf, U_lev, cIdx::Real_0, Idx::U_0_Real, 4, NUM_GHOST_CELLS);
+        
+        //aux_mf.FillBoundary(geom.periodicity());
+        
+        
+        if( lev != finest_level)
+        {
+            BoxArray fba = grid_new[lev+1].boxArray();
+            const iMultiFab& mask = makeFineMask(grid_new[lev], fba, IntVect(2), 1, 0);
+            
+            denom = MultiFab::Dot(mask, aux_mf, auxIdx::p_0_Real, aux_mf, auxIdx::DDp_0_Real, 4, 0);
+        }
+        else
+            denom = MultiFab::Dot(aux_mf, auxIdx::p_0_Real, aux_mf, auxIdx::DDp_0_Real, 4, 0);
+            //denom = MultiFab::Dot(Dp_lev, cIdx::Real_0, Dp_lev, cIdx::Real_0, 4,  NUM_GHOST_CELLS);
+            
+            
+        if(denom != 0) alpha = rsq/denom;
+        
+        //amrex::Print() << denom << std::endl;
+        
+        FillPatchAux(lev, time, aux_mf, auxIdx::p_0_Real, 4);
+        MultiFab::Saxpy(aux_mf, alpha, aux_mf, auxIdx::p_0_Real, auxIdx::DDinvPhi_0_Real, 4, 0);
+        
+        
+        FillPatchAux(lev, time, aux_mf, auxIdx::DDp_0_Real, 4);
+        MultiFab::Saxpy(aux_mf, -alpha, aux_mf, auxIdx::DDp_0_Real, auxIdx::res_0_Real, 4, 0);
+        
+        
+        if( lev != finest_level)
+        {
+            BoxArray fba = grid_new[lev+1].boxArray();
+            const iMultiFab& mask = makeFineMask(grid_new[lev], fba, IntVect(2), 1, 0);
+           
+            rsq_new = MultiFab::Dot(mask, aux_mf, auxIdx::res_0_Real, aux_mf, auxIdx::res_0_Real, 4, 0);         
+        }
+        else
+            rsq_new = MultiFab::Dot(aux_mf, auxIdx::res_0_Real, aux_mf, auxIdx::res_0_Real, 4, 0);
+        
+        if (rsq_new < Param.BiCG_Thresh)
+            break;
+            
+        if(rsq != 0) beta = rsq_new/rsq;
+        
+        //amrex::Print() << rsq_new << std::endl;
+        
+        rsq = rsq_new;
+        
+        MultiFab::LinComb(aux_mf, beta, aux_mf, auxIdx::p_0_Real, 1.0, aux_mf, auxIdx::res_0_Real, auxIdx::p_0_Real, 4, 0);
+        //amrex::Print() << MultiFab::Dot(aux_mf, auxIdx::p_0_Real, aux_mf, auxIdx::p_0_Real, 4,  NUM_GHOST_CELLS) << std::endl;
+        //amrex::Print() << rsq_new << std::endl;
+        
+        if (i == (Param.BiCG_Max_Iters - 1) && rsq_new > Param.BiCG_Thresh)
+        {
+            amrex::Print() << "Failed to converge after " << Param.BiCG_Max_Iters << " steps!" << std::endl;
+            amrex::Print() << "Final rsq = " << rsq_new << std::endl;
+            
+        }
+    }
+    
+       
+}
+
 
 void AmrCoreAdv::Set_g3p (MultiFab& g3p_mf, MultiFab& p_mf, int lev, Real time)
 {

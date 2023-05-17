@@ -16,25 +16,25 @@ sigma_lev = 1.0 1.0
 temp_lev = 1.0 1.0
 hmc_tau_lev = 1.0 1.0
 
-Use_Dynamical_Fermions = 0
+Use_Dynamical_Fermions = 1
 
-BiCGThresh = 1e-16
-BiCG_Max_Iter = 10000
+BiCGThresh = 1e-9
+BiCG_Max_Iter = 1000
 Use_BiCG_Stab = 0
 
 APE_iter = 0
 APE_alpha = 0.5
 
 # Refinement Parameteres
-time_lower = 360
-time_upper = 350
+time_lower = 350
+time_upper = 360
 x0_lower = -4
 x0_upper = 4
 x1_lower = -4
 x1_upper = 4
 
 # Ensure time_lower % regrid_int == 0
-amr.regrid_int = 10000
+amr.regrid_int = 5
 amr.max_level = 1
 amr.max_grid_size = 16 16
 amr.ref_ratio = 2
@@ -64,8 +64,8 @@ amr.v = 1
 amr.interpolation_type = 0
 
 # Problem specific boundary conditions 
-domain_lo_bc_types = 1 1
-domain_hi_bc_types = 1 1 
+domain_lo_bc_types = 0 0
+domain_hi_bc_types = 0 0 
 
 # Problem specific tagging for refinement 
 problem.s_error = 0  #3 2.5 2

@@ -36,7 +36,9 @@ state_is_tagged(int i, int j, int k,
         
         //return ((x0-x0c)*(x0-x0c) + (x1-x1c)*(x1-x1c) > 1024) || (time < 500.0 || time > 600.0);
         
-        return (!((x0 >= x0_lower && x0 < x0_upper) && (x1 >= x1_lower && x1< x1_upper))) || (time < time_lower || time > time_upper);
+        //return (!((x0 >= x0_lower && x0 < x0_upper) && (x1 >= x1_lower && x1< x1_upper))) || (time < time_lower || time > time_upper);
+        return (!((x0 >= x0_lower && x0 < x0_upper) && (x1 >= x1_lower && x1< x1_upper))) || ((int)std::round(time)%50 > 10) || (time < 200);
+        //return ((int)std::round(time)%50 > 10);
         //return true;
         
         //(time < 100 || time > 200) || (x1 < -35 || x1 > 35 || x0 < -35 || x0 > 35);

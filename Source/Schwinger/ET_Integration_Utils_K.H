@@ -226,7 +226,8 @@ void adam_avgdown_nodes (Box const& bx, Array4<T> const& crse,
                     crse(i,j,0,7+ccomp) = 0.25*(fine(ii,jj,0,7+fcomp) + fine(ii,jj+1,0,7+fcomp)+fine(ii+1,jj,0,7+fcomp) + fine(ii+1,jj+1,0,7+fcomp));
                     crse(i,j,0,8+ccomp) = 0.25*(fine(ii,jj,0,8+fcomp) + fine(ii,jj+1,0,8+fcomp)+fine(ii+1,jj,0,8+fcomp) + fine(ii+1,jj+1,0,8+fcomp));
                     crse(i,j,0,9+ccomp) = 0.25*(fine(ii,jj,0,9+fcomp) + fine(ii,jj+1,0,9+fcomp)+fine(ii+1,jj,0,9+fcomp) + fine(ii+1,jj+1,0,9+fcomp));
-                    
+                    //amrex::Print() << "Doing" << i << " and " << j << std::endl;
+                    //amrex::Print() << fine(ii,jj,0,9 + fcomp) << std::endl;
                     crse(i,j,0,10+ccomp) = 0*(fine(ii,jj,0,10+fcomp) + fine(ii,jj+1,0,10+fcomp)+fine(ii+1,jj,0,10+fcomp) + fine(ii+1,jj+1,0,10+fcomp));
                     crse(i,j,0,11+ccomp) = 0*(fine(ii,jj,0,11+fcomp) + fine(ii,jj+1,0,11+fcomp)+fine(ii+1,jj,0,11+fcomp) + fine(ii+1,jj+1,0,11+fcomp));
                 

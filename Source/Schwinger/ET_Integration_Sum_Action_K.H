@@ -58,7 +58,7 @@ sum_action_mom(const int i, const int j, const int k,
     
         amrex::Real Pi_0 = state_fab(i, j, k, Idx::Pi_0);
         amrex::Real Pi_1 = state_fab(i, j, k, Idx::Pi_1);
-        
+    
         amrex::Real P_0 = Pi_0*geom.CellSize(0);
         amrex::Real P_1 = Pi_1*geom.CellSize(1);
 

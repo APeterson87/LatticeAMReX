@@ -98,6 +98,8 @@ public:
     
     void State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Vector<amrex::MultiFab>& state, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param);
     
+    void BiCG_Solve(amrex::MultiFab& aux, amrex::MultiFab& state, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param);
+    
 private:
 
     ////////////////
@@ -218,7 +220,7 @@ private:
     void Trajectory(MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
     void StateTrajectory(amrex::Vector<amrex::MultiFab>& state, amrex::Vector<amrex::MultiFab>& aux, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param);
     
-    void update_momentum (MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
+    void update_momentum (MultiFab& state_mf, MultiFab& aux_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
     
     void update_gauge (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param, amrex::Real dtau);
     void update_action (MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
@@ -300,6 +302,7 @@ private:
     // BCRec is essentially a 2*DIM integer array storing the physical boundary
     // condition types at the lo/hi walls in each direction
     amrex::Vector<BCRec> bcs;
+    amrex::Vector<BCRec> bcs_aux;
 
     // Interpolater to use between levels
     amrex::Interpolater* mapper = nullptr;
