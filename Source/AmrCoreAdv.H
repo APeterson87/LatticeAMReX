@@ -76,7 +76,7 @@ public:
     virtual void RemakeLevel (int lev, amrex::Real time, const amrex::BoxArray& ba,
 			      const amrex::DistributionMapping& dm) override;
     
-    void ResetLevel (int lev, Real time, amrex::Vector<amrex::MultiFab>& hold_grid);
+    //void ResetLevel (int lev, Real time, amrex::Vector<amrex::MultiFab>& hold_grid);
     
     
     // Delete level data
@@ -96,9 +96,9 @@ public:
 
     //void BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useInitGuess, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
     
-    void State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Vector<amrex::MultiFab>& state, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param);
+    void State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Vector<amrex::MultiFab>& state, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param, bool grid_fractured);
     
-    void BiCG_Solve(amrex::MultiFab& aux, amrex::MultiFab& state, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param);
+    void BiCG_Solve(amrex::MultiFab& aux, amrex::MultiFab& state, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, bool grid_fractured);
     
 private:
 
@@ -131,8 +131,8 @@ private:
 
     // compute a new multifab by coping in phi from valid region and filling ghost cells
     // works for single level and 2-level cases (fill fine grid ghost by interpolating from coarse)
-    void FillPatch (int lev, amrex::Real time, amrex::MultiFab& mf, int icomp, int ncomp);
-    void FillPatchAux (int lev, amrex::Real time, amrex::MultiFab& mf, int icomp, int ncomp);
+    void FillPatch (int lev, amrex::Real time, amrex::MultiFab& mf, int icomp, int ncomp, bool grid_fractured);
+    void FillPatchAux (int lev, amrex::Real time, amrex::MultiFab& mf, int icomp, int ncomp, bool grid_fractured);
     
     void FillPatchForBiCG (int lev, Real time, MultiFab& cmf, MultiFab& mf, int icomp, int ncomp);
     // compute a new multifab by coping in data from valid region and filling ghost cells
@@ -216,11 +216,11 @@ private:
     /* My Functions */    
     
     void Perturb (amrex::MultiFab& state, int lev, amrex::Real time, const amrex::Geometry& geom, Parameters Param);
-    void StatePerturb (amrex::Vector<amrex::MultiFab>& state, Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param);
+    void StatePerturb (amrex::Vector<amrex::MultiFab>& state, Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param, bool gridfractured);
     void StateAction (amrex::Vector<amrex::MultiFab>& state, Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param);
     
     void Trajectory(MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
-    void StateTrajectory(amrex::Vector<amrex::MultiFab>& state, amrex::Vector<amrex::MultiFab>& aux, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param);
+    void StateTrajectory(amrex::Vector<amrex::MultiFab>& state, amrex::Vector<amrex::MultiFab>& aux, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param, bool grid_fractured);
     
     void update_momentum (MultiFab& state_mf, MultiFab& aux_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
     
@@ -297,6 +297,11 @@ private:
     amrex::Vector<amrex::MultiFab> grid_new;
     amrex::Vector<amrex::MultiFab> grid_aux;
     amrex::Vector<amrex::MultiFab> grid_hold;
+    
+    amrex::Vector<amrex::MultiFab> p;
+    amrex::Vector<amrex::MultiFab> Dp;
+    amrex::Vector<amrex::MultiFab> DDp;
+    amrex::Vector<amrex::MultiFab> U;
 
     // array of time integrator objects at each level of refinement
     //amrex::Vector<std::unique_ptr<TimeIntegrator<MultiFab> > > integrator;

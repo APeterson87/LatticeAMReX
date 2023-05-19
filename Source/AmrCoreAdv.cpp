@@ -34,6 +34,13 @@ AmrCoreAdv::AmrCoreAdv ()
     grid_aux.resize(nlevs_max);
     grid_hold.resize(nlevs_max);
     
+    p.resize(nlevs_max);
+    Dp.resize(nlevs_max);
+    DDp.resize(nlevs_max);
+    U.resize(nlevs_max);
+    
+    
+    
     //integrator.resize(nlevs_max);
 
     bcs.resize(Idx::NumScalars);
@@ -179,7 +186,7 @@ AmrCoreAdv::Evolve ()
     {
         
         /* WARNING:  grid_fractured must be set equivalently in ErrorEst! */ 
-        bool grid_fractured = ((int)std::round(cur_time)%50 <= 2);
+        bool grid_fractured = ((int)std::round(cur_time)%50 <= 2) && (cur_time > 200);
         
         amrex::Print() << "\nCoarse STEP " << step+1 << " starts ..." << std::endl;
         
@@ -200,18 +207,18 @@ AmrCoreAdv::Evolve ()
         }
 
 	// Fill `grid_new` with random values.
-        StatePerturb(grid_new, cur_time, geom, Param);
+        StatePerturb(grid_new, cur_time, geom, Param, grid_fractured);
         
         if(Param.use_dynamical_fermions)
         {
             
             for (int lev = finest_level; lev >= 0; lev--)
-                FillPatch(lev, cur_time, grid_new[lev], 0, grid_new[lev].nComp());
+                FillPatch(lev, cur_time, grid_new[lev], 0, grid_new[lev].nComp(), grid_fractured);
             
-            State_BiCG_Solve(grid_aux, grid_new, cur_time, geom, Param);
+            State_BiCG_Solve(grid_aux, grid_new, cur_time, geom, Param, grid_fractured);
         
             for(int lev = finest_level; lev >= 0; lev--) {
-                FillPatchAux(lev, cur_time, grid_aux[lev], 0, grid_aux[lev].nComp());
+                FillPatchAux(lev, cur_time, grid_aux[lev], 0, grid_aux[lev].nComp(), grid_fractured);
                 Set_g3DinvPhi(grid_new[lev], grid_aux[lev], geom[lev], lev, cur_time, Param.mass, Param.r);
             }
         }
@@ -219,15 +226,15 @@ AmrCoreAdv::Evolve ()
         
 
         for(int lev = finest_level; lev >= 0; lev--) {
-            FillPatch(lev, cur_time, grid_new[lev], 0, grid_new[lev].nComp());
-            FillPatchAux(lev, cur_time, grid_aux[lev], 0, grid_aux[lev].nComp());
+            FillPatch(lev, cur_time, grid_new[lev], 0, grid_new[lev].nComp(), grid_fractured);
+            FillPatchAux(lev, cur_time, grid_aux[lev], 0, grid_aux[lev].nComp(), grid_fractured);
         }
 
         
         Real HTotalcurrentLev = Total_Action_Lev(grid_new, grid_aux, geom, Param, finest_level); 
         amrex::Print() << "**********************************************" << std::endl << std::endl;
         
-        StateTrajectory(grid_new, grid_aux, cur_time, geom, Param);
+        StateTrajectory(grid_new, grid_aux, cur_time, geom, Param, grid_fractured);
 
 	
         
@@ -253,8 +260,8 @@ AmrCoreAdv::Evolve ()
         
         amrex::Print() << "*************** NEW STATE DATA ***************" << std::endl;
         for(int lev = finest_level; lev >= 0; lev--) {
-            FillPatch(lev, cur_time, grid_new[lev], 0, grid_new[lev].nComp());
-            FillPatchAux(lev, cur_time, grid_aux[lev], 0, grid_aux[lev].nComp());
+            FillPatch(lev, cur_time, grid_new[lev], 0, grid_new[lev].nComp(), grid_fractured);
+            FillPatchAux(lev, cur_time, grid_aux[lev], 0, grid_aux[lev].nComp(), grid_fractured);
         }
         Real HTotalLev = Total_Action_Lev(grid_new, grid_aux, geom, Param, finest_level);
         amrex::Print() << "**********************************************" << std::endl;
@@ -445,8 +452,8 @@ AmrCoreAdv::RemakeLevel (int lev, Real time, const BoxArray& ba,
     MultiFab aux_state(ba, dm, ncomp_aux, nghost_aux);
     MultiFab hold_state(ba, dm, ncomp, nghost);
     
-    FillPatch(lev, time, new_state, 0, ncomp);
-    FillPatchAux(lev, time, aux_state, 0, ncomp_aux);
+    FillPatch(lev, time, new_state, 0, ncomp, 0);
+    FillPatchAux(lev, time, aux_state, 0, ncomp_aux, 0);
     
     std::swap(new_state, grid_new[lev]);
     std::swap(aux_state, grid_aux[lev]);
@@ -458,7 +465,7 @@ AmrCoreAdv::RemakeLevel (int lev, Real time, const BoxArray& ba,
 
 }
 
-void
+/*void
 AmrCoreAdv::ResetLevel (int lev, Real time, amrex::Vector<amrex::MultiFab>& hold_grid)
 {
     const int ncomp = grid_new[lev].nComp();
@@ -471,7 +478,7 @@ AmrCoreAdv::ResetLevel (int lev, Real time, amrex::Vector<amrex::MultiFab>& hold
     MultiFab new_state(ba, dm, ncomp, nghost);
     MultiFab old_state(ba, dm, ncomp, nghost);
 
-    FillPatch(lev, time, new_state, 0, ncomp);
+    FillPatch(lev, time, new_state, 0, ncomp, gridfractured);
 
 
     std::swap(new_state, grid_new[lev]);
@@ -480,7 +487,7 @@ AmrCoreAdv::ResetLevel (int lev, Real time, amrex::Vector<amrex::MultiFab>& hold
     t_old[lev] = time - 1.e200;
     
     MultiFab::Copy(grid_new[lev], hold_grid[lev], Idx::U_0_Real, Idx::U_0_Real, 6, nghost);
-}
+}*/
 
 // Delete level data
 // overrides the pure virtual function in AmrCore
@@ -579,7 +586,7 @@ AmrCoreAdv::ErrorEst (int lev, TagBoxArray& tags, Real time, int ngrow)
     const amrex::Geometry& geom = Geom(lev);
     const auto dx = geom.CellSizeArray();
     
-    bool grid_fractured = ((int)std::round(time)%50 <= 2);
+    bool grid_fractured = ((int)std::round(time)%50 <= 2) && (time > 200);
 
     // only do this during the first call to ErrorEst
     if (first)
@@ -847,13 +854,13 @@ AmrCoreAdv::FlipSigns(int lev, MultiFab& mf, int icomp, int ncomp)
 // compute a new multifab by coping in data from valid region and filling ghost cells
 // works for single level and 2-level cases (fill fine grid ghost by interpolating from coarse)
 void
-AmrCoreAdv::FillPatch (int lev, Real time, MultiFab& mf, int icomp, int ncomp)
+AmrCoreAdv::FillPatch (int lev, Real time, MultiFab& mf, int icomp, int ncomp, bool grid_fractured)
 {
-    if (lev == 0)
+    if (lev == 0 || !grid_fractured)
     {
         Vector<MultiFab*> smf;
         Vector<Real> stime;
-        GetData(0, time, smf, stime);
+        GetData(lev, time, smf, stime);
 
         if(Gpu::inLaunchRegion())
         {
@@ -872,6 +879,8 @@ AmrCoreAdv::FillPatch (int lev, Real time, MultiFab& mf, int icomp, int ncomp)
                                         geom[lev], physbc, 0);
         }
     }
+    
+    
     else
     {
         Vector<MultiFab*> cmf, fmf;
@@ -909,14 +918,14 @@ AmrCoreAdv::FillPatch (int lev, Real time, MultiFab& mf, int icomp, int ncomp)
 // compute a new multifab by coping in data from valid region and filling ghost cells
 // works for single level and 2-level cases (fill fine grid ghost by interpolating from coarse)
 void
-AmrCoreAdv::FillPatchAux (int lev, Real time, MultiFab& mf, int icomp, int ncomp)
+AmrCoreAdv::FillPatchAux (int lev, Real time, MultiFab& mf, int icomp, int ncomp, bool grid_fractured)
 {
     
-    if (lev == 0)
+    if (lev == 0 || !grid_fractured)
     {
         Vector<MultiFab*> smf;
         Vector<Real> stime;
-        GetDataAux(0, time, smf, stime);
+        GetDataAux(lev, time, smf, stime);
 
         if(Gpu::inLaunchRegion())
         {
@@ -1823,13 +1832,14 @@ void AmrCoreAdv::Perturb (MultiFab& state_mf, int lev, Real time, const Geometry
     
 }
 
-void AmrCoreAdv::StatePerturb (amrex::Vector<amrex::MultiFab>& state, Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param)
+void AmrCoreAdv::StatePerturb (amrex::Vector<amrex::MultiFab>& state, Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param, bool grid_fractured)
 {
     for(int lev = finest_level; lev >= 0; lev--) {
       //FillPatch(lev, time, state[lev], 0, state[lev].nComp());
       Perturb(state[lev], lev, time, geom[lev], Param);
     }
-    AverageDownNodal();
+    if (grid_fractured) 
+        AverageDownNodal();
     
     for(int lev = finest_level; lev >= 0; lev--) {
 
@@ -1837,7 +1847,7 @@ void AmrCoreAdv::StatePerturb (amrex::Vector<amrex::MultiFab>& state, Real time,
       const BoxArray& ba_lev = state[lev].boxArray();
       const DistributionMapping& dm_lev = state[lev].DistributionMap();
         
-      FillPatch(lev, time, state[lev], 0, state[lev].nComp());  //Make sure ghost cells are filled before swapping out.
+      FillPatch(lev, time, state[lev], 0, state[lev].nComp(), grid_fractured);  //Make sure ghost cells are filled before swapping out.
       
       MultiFab chi_mf(ba_lev, dm_lev, 4, state[lev].nGrow());
       MultiFab::Swap(chi_mf, state[lev], Idx::Phi_0_Real, cIdx::Real_0, 4, state[lev].nGrow());
@@ -1855,7 +1865,8 @@ void AmrCoreAdv::StatePerturb (amrex::Vector<amrex::MultiFab>& state, Real time,
         
       //FillPatch(lev, time, state[lev], 0, state[lev].nComp());  //Make sure ghost cells are now filled with phi = g3Dchi
     }
-    AverageDownNodal();
+    if (grid_fractured)
+        AverageDownNodal();
     
     
 }
@@ -1870,58 +1881,73 @@ void AmrCoreAdv::StateAction (amrex::Vector<amrex::MultiFab>& state, Real time, 
 
 /* Evolve the `state` MF with one Leapfrog trajectory */
 void
-AmrCoreAdv::StateTrajectory(amrex::Vector<amrex::MultiFab>& state, amrex::Vector<amrex::MultiFab>& aux, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param) {
+AmrCoreAdv::StateTrajectory(amrex::Vector<amrex::MultiFab>& state, amrex::Vector<amrex::MultiFab>& aux, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param, bool grid_fractured) {
 
   BL_PROFILE("StateTrajectory");
   
   for(int lev = finest_level; lev >= 0; lev--) {
     Real dtau = Param.hmc_tau_lev[lev]/Param.hmc_substeps;
     //Preping for the next step, FillPatches at each level. 
-    FillPatch(lev, time, state[lev], 0, 4);
+    FillPatch(lev, time, state[lev], 0, 4, grid_fractured);
     if(Param.use_dynamical_fermions)
-        FillPatchAux(lev, time, aux[lev], auxIdx::DDinvPhi_0_Real, 8);
-    update_momentum(state[lev], aux[lev], lev, time, geom[lev], Param, dtau/2.0);       
+        FillPatchAux(lev, time, aux[lev], auxIdx::DDinvPhi_0_Real, 8, grid_fractured);
+    update_momentum(state[lev], aux[lev], lev, time, geom[lev], Param, dtau/2.0);  
+    if (lev == finest_level && !grid_fractured)
+          break;
   }
-  AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
+  
+  if (grid_fractured)
+      AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
   
   for(int i = 1; i < Param.hmc_substeps; i++) {
     for(int lev = finest_level; lev >= 0; lev--) { //Update finer levels first.
-      
       Real dtau = Param.hmc_tau_lev[lev]/Param.hmc_substeps;
       
       //Fill Ghost Cells right before I need them.  Less confusing/ambiguous.
       //FillPatch(lev, time, state[lev], 0, state[lev].nComp());
       update_gauge(state[lev], lev, time, geom[lev], Param, dtau);
+      if (lev == finest_level && !grid_fractured)
+          break;
     }
-    AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
+    if (grid_fractured)
+        AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
     
     if(Param.use_dynamical_fermions)
     {
       for (int lev = finest_level; lev >= 0; lev--)
-          FillPatch(lev, time, state[lev], 0, state[lev].nComp());
+      {
+          FillPatch(lev, time, state[lev], 0, state[lev].nComp(), grid_fractured);
+          if (lev == finest_level && !grid_fractured)
+              break;
+      }
           
-      State_BiCG_Solve(aux, state, time, geom, Param);
+      State_BiCG_Solve(aux, state, time, geom, Param, grid_fractured);
       
 
       for(int lev = finest_level; lev >= 0; lev--) {
           
-          FillPatchAux(lev, time, aux[lev], 0, aux[lev].nComp());
+          FillPatchAux(lev, time, aux[lev], 0, aux[lev].nComp(), grid_fractured);
           Set_g3DinvPhi(state[lev], aux[lev], geom[lev], lev, time, Param.mass, Param.r);
+          if (lev == finest_level && !grid_fractured)
+              break;
+
+              
       }
     }
     
     
     for(int lev = finest_level; lev >= 0; lev--) { //Update finer levels first.
-      if( lev == 0)
-          break;
       Real dtau = Param.hmc_tau_lev[lev]/Param.hmc_substeps;
       
-      FillPatch(lev, time, state[lev], 0, 4);
+      FillPatch(lev, time, state[lev], 0, 4, grid_fractured);
       if(Param.use_dynamical_fermions)
-          FillPatchAux(lev, time, aux[lev], auxIdx::DDinvPhi_0_Real, 8);
+          FillPatchAux(lev, time, aux[lev], auxIdx::DDinvPhi_0_Real, 8, grid_fractured);
       update_momentum(state[lev], aux[lev], lev, time, geom[lev], Param, dtau);
+      if (lev == finest_level && !grid_fractured)
+          break;
     }
-    AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
+    if (grid_fractured)
+        AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
   }
     
   /////////////////////////////////////////////////////////////////////////////////////////
@@ -1930,35 +1956,39 @@ AmrCoreAdv::StateTrajectory(amrex::Vector<amrex::MultiFab>& state, amrex::Vector
     
     //FillPatch(lev, time, state[lev], 0, state[lev].nComp());  //Preping for the next step, FillPatches at each level.
     update_gauge(state[lev], lev, time, geom[lev], Param, dtau);
+    if (lev == finest_level && !grid_fractured)
+          break;
   }
-  AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
+  if (grid_fractured)
+      AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
   
   if(Param.use_dynamical_fermions)
   {
   
     for (int lev = finest_level; lev >= 0; lev--)
-          FillPatch(lev, time, state[lev], 0, state[lev].nComp());
+          FillPatch(lev, time, state[lev], 0, state[lev].nComp(), grid_fractured);
           
-    State_BiCG_Solve(aux, state, time, geom, Param);
+    State_BiCG_Solve(aux, state, time, geom, Param, grid_fractured);
     
     for(int lev = finest_level; lev >= 0; lev--) {
-        FillPatchAux(lev, time, aux[lev], 0, aux[lev].nComp());
+        FillPatchAux(lev, time, aux[lev], 0, aux[lev].nComp(), grid_fractured);
         Set_g3DinvPhi(state[lev], aux[lev], geom[lev], lev, time, Param.mass, Param.r);
     }
   }
     
   for(int lev = finest_level; lev >= 0; lev--) { //Update finer levels first.
-      if( lev == 0)
-          break;
     Real dtau = Param.hmc_tau_lev[lev]/Param.hmc_substeps;
     
-    FillPatch(lev, time, state[lev], 0, 4);
+    FillPatch(lev, time, state[lev], 0, 4, grid_fractured);
     if(Param.use_dynamical_fermions)
-        FillPatchAux(lev, time, aux[lev], auxIdx::DDinvPhi_0_Real, 8);
+        FillPatchAux(lev, time, aux[lev], auxIdx::DDinvPhi_0_Real, 8, grid_fractured);
     update_momentum(state[lev], aux[lev], lev, time, geom[lev], Param, dtau/2.0);
+    if (lev == finest_level && !grid_fractured)
+          break;
     
-  }    
-  AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
+  }
+  if (grid_fractured)
+      AverageDownNodal();  //Now do all the AveragingDown after time stepping is complete...?
   
 }
 
@@ -2665,7 +2695,7 @@ Real AmrCoreAdv::meas_Total_TopCharge_Lev(amrex::Vector<amrex::MultiFab>& state,
     return TopCharge;
 }
 
-void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Vector<amrex::MultiFab>& state, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param)
+void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Vector<amrex::MultiFab>& state, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param, bool grid_fractured)
 {
     BL_PROFILE("State_BiCG_solve");
     
@@ -2676,7 +2706,7 @@ void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Ve
     amrex::Vector<amrex::Real> beta_arr(finest_level, 0);
     
     for(int lev = finest_level; lev >= 0; lev--) {
-        FillPatch(lev, time, state[lev], Idx::Phi_0_Real, 4);
+        FillPatch(lev, time, state[lev], Idx::Phi_0_Real, 4, grid_fractured);
         MultiFab::Copy(aux[lev], state[lev], Idx::Phi_0_Real, auxIdx::res_0_Real, 4, NUM_GHOST_CELLS);
     }
     
@@ -2704,10 +2734,33 @@ void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Ve
         }
     }
     
+    /*
+    amrex::Vector<amrex::MultiFab> p;
+    p.resize(finest_level);
+        
+    amrex::Vector<amrex::MultiFab> Dp;
+    Dp.resize(finest_level);
+        
+    amrex::Vector<amrex::MultiFab> DDp;
+    DDp.resize(finest_level);
+        
+    amrex::Vector<amrex::MultiFab> U;
+    U.resize(finest_level);
+    */
+    
     
     //for(int lev = finest_level; lev >= 0; lev--)
       //  FillPatch(lev, time, state[lev], Idx::U_0_Real, 4);
-    
+    for(int lev = finest_level; lev >= 0; lev--) {
+        //amrex::Print() << "Made it here" << std::endl;
+        
+        p[lev].define(aux[lev].boxArray(), aux[lev].DistributionMap(), 4, NUM_GHOST_CELLS);
+        Dp[lev].define(aux[lev].boxArray(), aux[lev].DistributionMap(), 4, NUM_GHOST_CELLS);
+        DDp[lev].define(aux[lev].boxArray(), aux[lev].DistributionMap(), 4, NUM_GHOST_CELLS);
+        U[lev].define(state[lev].boxArray(), state[lev].DistributionMap(), 4, NUM_GHOST_CELLS);
+        
+
+    }
     
     for(int i = 0; i < Param.BiCG_Max_Iters; i++)
     {
@@ -2715,46 +2768,52 @@ void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Ve
         
         
         for(int lev = finest_level; lev >= 0; lev--) {
-            FillPatchAux(lev, time, aux[lev], auxIdx::p_0_Real, 4);
+            FillPatchAux(lev, time, aux[lev], auxIdx::p_0_Real, 4, grid_fractured);
             
-            MultiFab p_lev(aux[lev].boxArray(), aux[lev].DistributionMap(), 4, NUM_GHOST_CELLS);
-            MultiFab::Swap(p_lev, aux[lev], auxIdx::p_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+            //MultiFab p_lev(aux[lev].boxArray(), aux[lev].DistributionMap(), 4, NUM_GHOST_CELLS);
+            MultiFab::Swap(p[lev], aux[lev], auxIdx::p_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
             
-            MultiFab Dp_lev(aux[lev].boxArray(), aux[lev].DistributionMap(), 4, NUM_GHOST_CELLS);
-            MultiFab::Swap(Dp_lev, aux[lev], auxIdx::Dp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+            //MultiFab Dp_lev(aux[lev].boxArray(), aux[lev].DistributionMap(), 4, NUM_GHOST_CELLS);
+            MultiFab::Swap(Dp[lev], aux[lev], auxIdx::Dp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
             
             //FillPatch(lev, time, state[lev], Idx::U_0_Real, 4);
-            MultiFab U_lev(state[lev].boxArray(), state[lev].DistributionMap(), 4, NUM_GHOST_CELLS);
-            MultiFab::Swap(U_lev, state[lev], Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+            //MultiFab U_lev(state[lev].boxArray(), state[lev].DistributionMap(), 4, NUM_GHOST_CELLS);
+            MultiFab::Swap(U[lev], state[lev], Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
             
-            Set_Dp(Dp_lev, p_lev, U_lev, lev, time, Param);
-            Set_g3p(Dp_lev, Dp_lev, lev, time);
+            Set_Dp(Dp[lev], p[lev], U[lev], lev, time, Param);
+            Set_g3p(Dp[lev], Dp[lev], lev, time);
             
             
-            MultiFab::Swap(p_lev, aux[lev], auxIdx::p_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
-            MultiFab::Swap(Dp_lev, aux[lev], auxIdx::Dp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
-            MultiFab::Swap(U_lev, state[lev], Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+            MultiFab::Swap(p[lev], aux[lev], auxIdx::p_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+            MultiFab::Swap(Dp[lev], aux[lev], auxIdx::Dp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+            MultiFab::Swap(U[lev], state[lev], Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+            
+            if (lev == finest_level && !grid_fractured)
+                break;
         }
         
         for(int lev = finest_level; lev >= 0; lev--) {
-            FillPatchAux(lev, time, aux[lev], auxIdx::Dp_0_Real, 4);
+            FillPatchAux(lev, time, aux[lev], auxIdx::Dp_0_Real, 4, grid_fractured);
 
-            MultiFab Dp_lev(aux[lev].boxArray(), aux[lev].DistributionMap(), 4, NUM_GHOST_CELLS);
-            MultiFab::Swap(Dp_lev, aux[lev], auxIdx::Dp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+            //MultiFab Dp_lev(aux[lev].boxArray(), aux[lev].DistributionMap(), 4, NUM_GHOST_CELLS);
+            MultiFab::Swap(Dp[lev], aux[lev], auxIdx::Dp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
             
-            MultiFab DDp_lev(aux[lev].boxArray(), aux[lev].DistributionMap(), 4, NUM_GHOST_CELLS);
-            MultiFab::Swap(DDp_lev, aux[lev], auxIdx::DDp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+            //MultiFab DDp_lev(aux[lev].boxArray(), aux[lev].DistributionMap(), 4, NUM_GHOST_CELLS);
+            MultiFab::Swap(DDp[lev], aux[lev], auxIdx::DDp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
             
             //FillPatch(lev, time, state[lev], Idx::U_0_Real, 4);
-            MultiFab U_lev(state[lev].boxArray(), state[lev].DistributionMap(), 4, NUM_GHOST_CELLS);
-            MultiFab::Swap(U_lev, state[lev], Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+            //MultiFab U_lev(state[lev].boxArray(), state[lev].DistributionMap(), 4, NUM_GHOST_CELLS);
+            MultiFab::Swap(U[lev], state[lev], Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
             
-            Set_Dp(DDp_lev, Dp_lev, U_lev, lev, time, Param);
-            Set_g3p(DDp_lev, DDp_lev, lev, time);
+            Set_Dp(DDp[lev], Dp[lev], U[lev], lev, time, Param);
+            Set_g3p(DDp[lev], DDp[lev], lev, time);
 
-            MultiFab::Swap(Dp_lev, aux[lev], auxIdx::Dp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
-            MultiFab::Swap(DDp_lev, aux[lev], auxIdx::DDp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
-            MultiFab::Swap(U_lev, state[lev], Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+            MultiFab::Swap(Dp[lev], aux[lev], auxIdx::Dp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+            MultiFab::Swap(DDp[lev], aux[lev], auxIdx::DDp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+            MultiFab::Swap(U[lev], state[lev], Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
+            
+            if (lev == finest_level && !grid_fractured)
+                break;
         }
         
         
@@ -2772,6 +2831,9 @@ void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Ve
                 denom_arr[lev] = MultiFab::Dot(aux[lev], auxIdx::p_0_Real, aux[lev], auxIdx::DDp_0_Real, 4, 0);
             
             if(denom_arr[lev] != 0) alpha_arr[lev] = rsq_arr[lev]/denom_arr[lev];
+            
+            if (lev == finest_level && !grid_fractured)
+                break;
         }
         
         
@@ -2783,15 +2845,19 @@ void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Ve
             MultiFab::Saxpy(aux[lev], alpha_arr[lev], aux[lev], auxIdx::p_0_Real, auxIdx::DDinvPhi_0_Real, 4, 0);
         }
         
-        
-        AverageDown();
+        if (grid_fractured)
+            AverageDown();
         
         for(int lev = finest_level; lev >= 0; lev--) {    
             //FillPatchAux(lev, time, aux[lev], auxIdx::DDp_0_Real, 4);
             MultiFab::Saxpy(aux[lev], -alpha_arr[lev], aux[lev], auxIdx::DDp_0_Real, auxIdx::res_0_Real, 4, 0);
             
+            if (lev == finest_level && !grid_fractured)
+                break;
+            
         }
-        AverageDown();
+        if (grid_fractured)
+            AverageDown();
         
         //amrex::Print() << MultiFab::Dot(aux[1],auxIdx::p_0_Real, aux[1],auxIdx::p_0_Real,4, 0, false) << std::endl;
         
@@ -2810,6 +2876,9 @@ void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Ve
                 rsq_new_arr[lev] = MultiFab::Dot(aux[lev], auxIdx::res_0_Real, aux[lev], auxIdx::res_0_Real, 4, 0);
             
             if(rsq_arr[lev] != 0) beta_arr[lev] = rsq_new_arr[lev]/rsq_arr[lev];
+            
+            if (lev == finest_level && !grid_fractured)
+                break;
         }
         
         //amrex::Print() << rsq_new_arr[1] << std::endl;
@@ -2828,8 +2897,12 @@ void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Ve
             MultiFab::LinComb(aux[lev], beta_arr[lev], aux[lev], auxIdx::p_0_Real, 1.0, aux[lev], auxIdx::res_0_Real, auxIdx::p_0_Real, 4, 0);
             
             //amrex::Print() << rsq_arr[lev] << " ";
+            
+            if (lev == finest_level && !grid_fractured)
+                break;
         }
-        AverageDown();
+        if (grid_fractured)
+            AverageDown();
         
         //amrex::Print() << std::endl;
         
@@ -2850,11 +2923,11 @@ void AmrCoreAdv::State_BiCG_Solve(amrex::Vector<amrex::MultiFab>& aux, amrex::Ve
     
 }
 
-void AmrCoreAdv::BiCG_Solve(amrex::MultiFab& aux_mf, amrex::MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param)
+void AmrCoreAdv::BiCG_Solve(amrex::MultiFab& aux_mf, amrex::MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, bool grid_fractured)
 {
     amrex::Real rsq, rsq_new, denom, alpha, beta;
     
-    FillPatch(lev, time, state_mf, Idx::Phi_0_Real, 4);
+    FillPatch(lev, time, state_mf, Idx::Phi_0_Real, 4, grid_fractured);
     MultiFab::Copy(aux_mf, state_mf, Idx::Phi_0_Real, auxIdx::res_0_Real, 4, NUM_GHOST_CELLS);
     
     
@@ -2877,19 +2950,19 @@ void AmrCoreAdv::BiCG_Solve(amrex::MultiFab& aux_mf, amrex::MultiFab& state_mf, 
     
     for(int i = 0; i < Param.BiCG_Max_Iters; i++)
     {
-         FillPatchAux(lev, time, aux_mf, auxIdx::p_0_Real, 4);
+         FillPatchAux(lev, time, aux_mf, auxIdx::p_0_Real, 4, grid_fractured);
 
          MultiFab p_lev(aux_mf.boxArray(), aux_mf.DistributionMap(), 4, NUM_GHOST_CELLS);
          MultiFab::Copy(p_lev, aux_mf, auxIdx::p_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
         
-         FillPatchAux(lev, time, aux_mf, auxIdx::Dp_0_Real, 4);
+         FillPatchAux(lev, time, aux_mf, auxIdx::Dp_0_Real, 4, grid_fractured);
 
          MultiFab Dp_lev(aux_mf.boxArray(), aux_mf.DistributionMap(), 4, NUM_GHOST_CELLS);
          MultiFab::Copy(Dp_lev, aux_mf, auxIdx::Dp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
         
 
          
-         FillPatch(lev, time, state_mf, Idx::U_0_Real, 4);
+         FillPatch(lev, time, state_mf, Idx::U_0_Real, 4, grid_fractured);
          MultiFab U_lev(state_mf.boxArray(), state_mf.DistributionMap(), 4, NUM_GHOST_CELLS);
          MultiFab::Copy(U_lev, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
 
@@ -2905,7 +2978,7 @@ void AmrCoreAdv::BiCG_Solve(amrex::MultiFab& aux_mf, amrex::MultiFab& state_mf, 
         
 
          
-         FillPatchAux(lev, time, aux_mf, auxIdx::Dp_0_Real, 4);
+         FillPatchAux(lev, time, aux_mf, auxIdx::Dp_0_Real, 4, grid_fractured);
         
          MultiFab::Copy(Dp_lev, aux_mf, auxIdx::Dp_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
 
@@ -2914,7 +2987,7 @@ void AmrCoreAdv::BiCG_Solve(amrex::MultiFab& aux_mf, amrex::MultiFab& state_mf, 
          
 
         
-         FillPatch(lev, time, state_mf, Idx::U_0_Real, 4);
+         FillPatch(lev, time, state_mf, Idx::U_0_Real, 4, grid_fractured);
          MultiFab::Copy(U_lev, state_mf, Idx::U_0_Real, cIdx::Real_0, 4, NUM_GHOST_CELLS);
 
          
@@ -2948,11 +3021,11 @@ void AmrCoreAdv::BiCG_Solve(amrex::MultiFab& aux_mf, amrex::MultiFab& state_mf, 
         
         //amrex::Print() << denom << std::endl;
         
-        FillPatchAux(lev, time, aux_mf, auxIdx::p_0_Real, 4);
+        FillPatchAux(lev, time, aux_mf, auxIdx::p_0_Real, 4, grid_fractured);
         MultiFab::Saxpy(aux_mf, alpha, aux_mf, auxIdx::p_0_Real, auxIdx::DDinvPhi_0_Real, 4, 0);
         
         
-        FillPatchAux(lev, time, aux_mf, auxIdx::DDp_0_Real, 4);
+        FillPatchAux(lev, time, aux_mf, auxIdx::DDp_0_Real, 4, grid_fractured);
         MultiFab::Saxpy(aux_mf, -alpha, aux_mf, auxIdx::DDp_0_Real, auxIdx::res_0_Real, 4, 0);
         
         
