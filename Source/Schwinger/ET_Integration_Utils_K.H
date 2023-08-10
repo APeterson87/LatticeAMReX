@@ -59,7 +59,7 @@ struct Parameters {
     
             int APE_smear_iter = 1.0;
             Real APE_smear_alpha = 0.5;
-            int measWilsonLoops_Interval = 10;
+            int measSigmaLoops_Interval = 10;
             int checkrevtraj_Interval = 5;
     
 
@@ -74,9 +74,11 @@ inline
 void 
 state_smear_gauge(int i, int j, int k, 
         amrex::Array4<amrex::Real> const& smeared_fab,
-	const amrex::Real time,
+        amrex::Array4<amrex::Real> const& smeared_tmp_fab,
+        const amrex::Real time,
         amrex::Real alpha) noexcept 
 {
+
 
         amrex::Real U_0_00_r = smeared_fab(i, j, k, cIdx::Real_0);
         amrex::Real U_0_00_i = smeared_fab(i, j, k, cIdx::Imaginary_0);
@@ -123,14 +125,29 @@ state_smear_gauge(int i, int j, int k,
         
         std::complex<double> SmU_0_00 = (1.0-alpha)*U_0_00 + alpha/2.0*staple_0;
         std::complex<double> SmU_1_00 = (1.0-alpha)*U_1_00 + alpha/2.0*staple_1;
-                
-	// Add the projection here
-	amrex::Real SmU_tmp_0_00_Real = std::real(SmU_0_00);
-        amrex::Real SmU_tmp_0_00_Imaginary = std::imag(SmU_0_00);
+        
+        
+        smeared_tmp_fab(i, j, k, cIdx::Real_0) = std::real(SmU_0_00);
+        smeared_tmp_fab(i, j, k, cIdx::Imaginary_0) = std::imag(SmU_0_00);
+        smeared_tmp_fab(i, j, k, cIdx::Real_1) = std::real(SmU_1_00);
+        smeared_tmp_fab(i, j, k, cIdx::Imaginary_1) = std::imag(SmU_1_00);
+
+}
+
+AMREX_GPU_DEVICE 
+inline 
+void 
+state_project_smeared(int i, int j, int k, 
+        amrex::Array4<amrex::Real> const& smeared_fab,
+        amrex::Array4<amrex::Real> const& smeared_tmp_fab,
+        const amrex::Real time) noexcept 
+{
+        amrex::Real SmU_tmp_0_00_Real = smeared_tmp_fab(i, j, k, cIdx::Real_0);
+        amrex::Real SmU_tmp_0_00_Imaginary = smeared_tmp_fab(i, j, k, cIdx::Imaginary_0);
         std::complex<double> SmU_tmp_0_00 = std::complex<double>(SmU_tmp_0_00_Real, SmU_tmp_0_00_Imaginary);
         
-        amrex::Real SmU_tmp_1_00_Real = std::real(SmU_1_00);
-        amrex::Real SmU_tmp_1_00_Imaginary = std::imag(SmU_1_00);
+        amrex::Real SmU_tmp_1_00_Real = smeared_tmp_fab(i, j, k, cIdx::Real_1);
+        amrex::Real SmU_tmp_1_00_Imaginary = smeared_tmp_fab(i, j, k, cIdx::Imaginary_1);
         std::complex<double> SmU_tmp_1_00 = std::complex<double>(SmU_tmp_1_00_Real, SmU_tmp_1_00_Imaginary);
         
         smeared_fab(i, j, k, cIdx::Real_0) = std::real(std::polar(1.0,std::arg(SmU_tmp_0_00)));
@@ -138,8 +155,8 @@ state_smear_gauge(int i, int j, int k,
         smeared_fab(i, j, k, cIdx::Real_1) = std::real(std::polar(1.0,std::arg(SmU_tmp_1_00)));
         smeared_fab(i, j, k, cIdx::Imaginary_1) = std::imag(std::polar(1.0,std::arg(SmU_tmp_1_00)));
 
-	
 }
+
 
 template <typename T>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
@@ -172,60 +189,44 @@ void adam_avgdown_nodes (Box const& bx, Array4<T> const& crse,
                     
                     Real Thetaf_0_00 = std::atan2(Uf_0_I_00,Uf_0_R_00);
                     
-                    Real Uf_0_R_0p = fine(ii, jj+1, 0, fcomp);
-                    Real Uf_0_I_0p = fine(ii, jj+1, 0, 1+fcomp);
+                    Real Uf_0_R_p0 = fine(ii+1, jj, 0, fcomp);
+                    Real Uf_0_I_p0 = fine(ii+1, jj, 0, 1+fcomp);
                     
-                    Real Thetaf_0_0p = std::atan2(Uf_0_I_0p,Uf_0_R_0p);
+                    Real Thetaf_0_p0 = std::atan2(Uf_0_I_p0,Uf_0_R_p0);
                     
                     Real Uf_1_R_00 = fine(ii, jj, 0, 2+fcomp);
                     Real Uf_1_I_00 = fine(ii, jj, 0, 3+fcomp);
                     
                     Real Thetaf_1_00 = std::atan2(Uf_1_I_00,Uf_1_R_00);
                     
-                    Real Uf_1_R_p0 = fine(ii+1, jj, 0, 2+fcomp);
-                    Real Uf_1_I_p0 = fine(ii+1, jj, 0, 3+fcomp);
+                    Real Uf_1_R_0p = fine(ii, jj+1, 0, 2+fcomp);
+                    Real Uf_1_I_0p = fine(ii, jj+1, 0, 3+fcomp);
                     
-                    Real Thetaf_1_p0 = std::atan2(Uf_1_I_p0,Uf_1_R_p0);
+                    Real Thetaf_1_0p = std::atan2(Uf_1_I_0p,Uf_1_R_0p);
                     
-                    Real Theta_0 = 0.5*(Thetaf_0_00 + Thetaf_0_0p);
-                    Real Theta_1 = 0.5*(Thetaf_1_00 + Thetaf_1_p0);
+                    //Real Theta_0 = 0.5*(Thetaf_0_00 + Thetaf_0_0p);
+                    //Real Theta_1 = 0.5*(Thetaf_1_00 + Thetaf_1_p0);
+                    
+                    Real Theta_0 = (Thetaf_0_00 + Thetaf_0_p0);
+                    Real Theta_1 = (Thetaf_1_00 + Thetaf_1_0p);
                     
                     crse(i,j,0,ccomp) = std::cos(Theta_0);
                     crse(i,j,0,1+ccomp) = std::sin(Theta_0);
                     crse(i,j,0,2+ccomp) = std::cos(Theta_1);
                     crse(i,j,0,3+ccomp) = std::sin(Theta_1);
                     
-                    //crse(i,j,0,ccomp) = 0.5*(fine(ii,jj,0,fcomp)+fine(ii,jj+1,0,fcomp));
-                    //crse(i,j,0,1+ccomp) = 0.5*(fine(ii,jj,0,1+fcomp)+fine(ii+1,jj,0,1+fcomp));
-                    
-                    /*
-                    Real staple0 = 0;
-                    staple0 += alpha/2*(fine(ii,jj,0,1+fcomp)+fine(ii,jj+1,0,fcomp)-fine(ii+1,jj,0,1+fcomp));
-                    staple0 += alpha/2*(-fine(ii,jj-1,0,1+fcomp) + fine(ii,jj-1,0,fcomp) + fine(ii+1,jj-1,0,1+fcomp));
-                    
-                    Real staple1 = 0;
-                    staple1 += alpha/2*(fine(ii,jj,0,fcomp) + fine(ii+1,jj,0,fcomp+1) - fine(ii,jj+1,0,fcomp)); 
-                    staple1 += alpha/2*(-fine(ii-1,jj,0,fcomp) + fine(ii-1,jj,0,fcomp+1) + fine(ii-1,jj+1,0,fcomp));
-                    
-                    crse(i,j,0,ccomp) = (1-alpha)*fine(ii,jj,0,fcomp) + staple0;
-                    crse(i,j,0,1+ccomp) = (1-alpha)*fine(ii,jj,0,1+fcomp) + staple1;
+                    crse(i,j,0,4+ccomp) = fine(ii+itake,jj+jtake,0,4+fcomp); 
+                    crse(i,j,0,5+ccomp) = fine(ii+itake,jj+jtake,0,5+fcomp); 
                     
                     
-                    /*crse(i,j,0,2+ccomp) = 0.5*(fine(ii,jj,0,2+fcomp) + fine(ii+1,jj,0,2+fcomp));
-                    crse(i,j,0,3+ccomp) = 0.5*(fine(ii,jj,0,3+fcomp) + fine(ii,jj+1,0,3+fcomp));
-                    crse(i,j,0,8+ccomp) = 0*(fine(ii,jj,0,8+fcomp) + fine(ii,jj+1,0,8+fcomp)+fine(ii+1,jj,0,8+fcomp) + fine(ii+1,jj+1,0,8+fcomp));
-                    */
-                    
-                    //crse(i,j,0,ccomp) = 0.25*(fine(ii,jj,0,0+fcomp) + fine(ii,jj+1,0,0+fcomp)+fine(ii+1,jj,0,0+fcomp) + fine(ii+1,jj+1,0,0+fcomp));
-                    //crse(i,j,0,1+ccomp) = 0.25*(fine(ii,jj,0,1+fcomp) + fine(ii,jj+1,0,1+fcomp)+fine(ii+1,jj,0,1+fcomp) + fine(ii+1,jj+1,0,1+fcomp));
-                    crse(i,j,0,4+ccomp) = fine(ii+itake,jj+jtake,0,4+fcomp); //0.25*(fine(ii,jj,0,2+fcomp) + fine(ii,jj+1,0,2+fcomp)+fine(ii+1,jj,0,2+fcomp) + fine(ii+1,jj+1,0,2+fcomp));
-                    crse(i,j,0,5+ccomp) = fine(ii+itake,jj+jtake,0,5+fcomp); //0.25*(fine(ii,jj,0,3+fcomp) + fine(ii,jj+1,0,3+fcomp)+fine(ii+1,jj,0,3+fcomp) + fine(ii+1,jj+1,0,3+fcomp));
-                    crse(i,j,0,10+ccomp) = 0*(fine(ii,jj,0,10+fcomp) + fine(ii,jj+1,0,10+fcomp)+fine(ii+1,jj,0,10+fcomp) + fine(ii+1,jj+1,0,8+fcomp));
-                    
-                    crse(i,j,0,4+ccomp) = 0;
-                    crse(i,j,0,5+ccomp) = 0;
                     crse(i,j,0,6+ccomp) = 0;
                     crse(i,j,0,7+ccomp) = 0;
+                    crse(i,j,0,8+ccomp) = 0;
+                    crse(i,j,0,9+ccomp) = 0;
+                    
+                    crse(i,j,0,10+ccomp) = 0*(fine(ii,jj,0,10+fcomp) + fine(ii,jj+1,0,10+fcomp)+fine(ii+1,jj,0,10+fcomp) + fine(ii+1,jj+1,0,8+fcomp));
+                    
+                    crse(i,j,0,11+ccomp) = 0*(fine(ii,jj,0,11+fcomp) + fine(ii,jj+1,0,11+fcomp)+fine(ii+1,jj,0,11+fcomp) + fine(ii+1,jj+1,0,11+fcomp));
                 
             }
         }    

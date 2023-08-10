@@ -76,7 +76,7 @@ public:
     virtual void RemakeLevel (int lev, amrex::Real time, const amrex::BoxArray& ba,
 			      const amrex::DistributionMapping& dm) override;
     
-    void ResetLevel (int lev, Real time, amrex::Vector<amrex::MultiFab>& hold_grid);
+    void ResetLevel (int lev, Real time, amrex::Vector<amrex::MultiFab>& hold_grid, bool grid_fractured);
     
     
     // Delete level data
@@ -94,7 +94,7 @@ public:
     virtual void ErrorEst (int lev, amrex::TagBoxArray& tags, amrex::Real time, int ngrow) override;
     
 
-    void BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& U_mf, bool useInitGuess, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param);
+    void BiCG_Solve(MultiFab& x_mf, MultiFab& b_mf, MultiFab& state_mf, bool useInitGuess, int lev, Real time, const amrex::Geometry& geom_lev, Parameters Param, bool grid_fractured);
 
 private:
 
@@ -125,7 +125,7 @@ private:
 
     // compute a new multifab by coping in phi from valid region and filling ghost cells
     // works for single level and 2-level cases (fill fine grid ghost by interpolating from coarse)
-    void FillPatch (int lev, amrex::Real time, amrex::MultiFab& mf, int icomp, int ncomp);
+    void FillPatch (int lev, amrex::Real time, amrex::MultiFab& mf, int icomp, int ncomp,  bool grid_fractured);
 
     // compute a new multifab by coping in data from valid region and filling ghost cells
     // works for single level and 2-level cases (fill fine grid ghost by interpolating from coarse)
@@ -204,11 +204,11 @@ private:
     /* My Functions */    
     
     void Perturb (amrex::MultiFab& state, int lev, amrex::Real time, const amrex::Geometry& geom, Parameters Param);
-    void StatePerturb (amrex::Vector<amrex::MultiFab>& state, Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param);
+    void StatePerturb (amrex::Vector<amrex::MultiFab>& state, Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param, bool grid_fractured);
     void StateAction (amrex::Vector<amrex::MultiFab>& state, Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param);
     
     void Trajectory(MultiFab& state_mf, int lev, const amrex::Real time, const Geometry& geom, Parameters Param);
-    void StateTrajectory(amrex::Vector<amrex::MultiFab>& state, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param);
+    void StateTrajectory(amrex::Vector<amrex::MultiFab>& state, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, bool enable_smearing, Parameters Param);
     
     void update_momentum (MultiFab& state_mf, int lev, const amrex::Real time, const amrex::Geometry& geom, Parameters Param, amrex::Real dtau);
     
@@ -257,10 +257,11 @@ private:
     
     Real meas_Total_TopCharge_Lev(amrex::Vector<amrex::MultiFab>& state, const amrex::Real time, const amrex::Vector<amrex::Geometry>& geom, Parameters Param, int high_lev);
     
-    void meas_WilsonLoops(MultiFab& U_mf, int lev, amrex::Real time, const Geometry& geom, Parameters Param, amrex::Vector<double> &sigma, std::ofstream& Sigma);
+    void meas_SigmaLoops(MultiFab& U_mf, int lev, amrex::Real time, const Geometry& geom, Parameters Param, amrex::Vector<double> &sigma, std::ofstream& Sigma);
+    void meas_WilsonLoops(MultiFab& U_mf, int lev, amrex::Real time, int step, const Geometry& geom, Parameters Param, amrex::Vector<double> &sigma, std::ofstream& Sigma);
     Real Measure_Plaq (MultiFab& U_mf, int lev);
     
-    void PionCorrelation (MultiFab& U_mf, int lev, const Real time_lev, const amrex::Geometry& geom, Parameters Param, amrex::Vector<double>& picorr, std::ofstream& PiCorr);
+    void PionCorrelation (MultiFab& state_mf, int lev, const Real time_lev, int step, const amrex::Geometry& geom, Parameters Param, amrex::Vector<double>& picorr, std::ofstream& PiCorr, bool grid_fractured);
 
 
     /* End of My Functions*/
@@ -279,7 +280,7 @@ private:
     amrex::Vector<amrex::Real> t_old;
     amrex::Vector<amrex::Real> dt;
 
-    // array of multifabs to store the solution at each level of refinement
+    // array of multifabs to store the gauge at each level of refinement
     // after advancing a level we use "swap".
     amrex::Vector<amrex::MultiFab> grid_new;
     amrex::Vector<amrex::MultiFab> grid_hold;
@@ -321,7 +322,7 @@ private:
     amrex::Real APE_alpha = 0.5;
     int APE_iter = 2;
     
-    int measWL_Interval = 10;
+    int measSigma_Interval = 10;
     int Check_revTraj_Int = 5;
     
     Vector<int> numcells;
@@ -372,10 +373,10 @@ private:
     bool is_regridded = false;
 
     // tagging criteria
-  amrex::Real time_lower = 500;
-  amrex::Real time_upper = 600;
-  int x0_lower = -8;
-  int x0_upper = 8;
+    amrex::Real time_lower = 500;
+    amrex::Real time_upper = 600;
+    int x0_lower = -8;
+    int x0_upper = 8;
     int x1_lower = -8;
     int x1_upper = 8;
   

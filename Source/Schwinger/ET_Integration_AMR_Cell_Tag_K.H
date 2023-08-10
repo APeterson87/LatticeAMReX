@@ -12,6 +12,7 @@ state_is_tagged(int i, int j, int k,
         int lev,
         amrex::Array4<amrex::Real const> const& state_fab,
         amrex::Real error_threshold,
+        const bool grid_fractured,
 		const amrex::Real time,
 		const amrex::Real time_lower, const amrex::Real time_upper,
 		const int x0_lower, const int x0_upper,
@@ -36,8 +37,12 @@ state_is_tagged(int i, int j, int k,
         
         //return ((x0-x0c)*(x0-x0c) + (x1-x1c)*(x1-x1c) > 1024) || (time < 500.0 || time > 600.0);
         
-        return (!((x0 >= x0_lower && x0 < x0_upper) && (x1 >= x1_lower && x1< x1_upper))) || (time < time_lower || time > time_upper);
+        //return (!((x0 >= x0_lower && x0 < x0_upper) && (x1 >= x1_lower && x1< x1_upper))) || (time < time_lower || time > time_upper);
+        
+        return (!((x0 >= x0_lower && x0 < x0_upper) && (x1 >= x1_lower && x1< x1_upper))) || !grid_fractured;
+        //return (!((x1 >= x1_lower && x1< x1_upper))) || !grid_fractured;
         //return true;
+        //return (time < time_lower || time > time_upper);
         
         //(time < 100 || time > 200) || (x1 < -35 || x1 > 35 || x0 < -35 || x0 > 35);
         

@@ -23,8 +23,8 @@ state_init(int i, int j, int k,
         srand (static_cast <unsigned> (time(0)));
         double r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
         
-        amrex::Real Theta_0 =  M_PI/4*(r-0.5); //0.1*std::sin(2*M_PI*(x0)/(128)); //0.1*std::exp(-(x0*x0 + x1*x1)/100);
-        amrex::Real Theta_1 =  M_PI/4*(r-0.5); //0.1*std::sin(2*M_PI*(x0)/(128)); //0.1*std::exp(-(x0*x0 + x1*x1)/100);
+        amrex::Real Theta_0 = M_PI/4*(amrex::Random()-0.5); //0.1*std::sin(2*M_PI*(x0)/(128)); //0.1*std::exp(-(x0*x0 + x1*x1)/100);
+        amrex::Real Theta_1 = M_PI/4*(amrex::Random()-0.5); //0.1*std::sin(2*M_PI*(x0)/(128)); //0.1*std::exp(-(x0*x0 + x1*x1)/100);
         
         amrex::Real Pi_0 = amrex::RandomNormal(0,1.0); //-0.1*2*M_PI/64*std::sin(2*M_PI*(x0)/(128)); // -0.1*std::exp(-(x0*x0 + x1*x1)/100); 
         amrex::Real Pi_1 = amrex::RandomNormal(0,1.0); //-0.1*2*M_PI/64*std::sin(2*M_PI*(x0)/(128)); //-0.1*std::exp(-(x0*x0 + x1*x1)/100);
@@ -34,14 +34,56 @@ state_init(int i, int j, int k,
         state_fab(i, j, k, Idx::U_1_Real) = std::cos(Theta_1);
         state_fab(i, j, k, Idx::U_1_Imaginary) = std::sin(Theta_1);
         
-        //state_fab(i, j, k, Idx::Pi_0) = Pi_0;
-        //state_fab(i, j, k, Idx::Pi_1) = Pi_1;
+        state_fab(i, j, k, Idx::Pi_0) = Pi_0;
+        state_fab(i, j, k, Idx::Pi_1) = Pi_1;
         
-        state_fab(i, j, k, Idx::Phi_0_Real) = 0; 
-        state_fab(i, j, k, Idx::Phi_0_Imaginary) = 0;
-        state_fab(i, j, k, Idx::Phi_1_Real) = 0;
-        state_fab(i, j, k, Idx::Phi_1_Imaginary) = 0;
+        state_fab(i, j, k, Idx::Phi_0_Real) = amrex::RandomNormal(0,1)/std::sqrt(2); 
+        state_fab(i, j, k, Idx::Phi_0_Imaginary) = amrex::RandomNormal(0,1)/std::sqrt(2);
+        state_fab(i, j, k, Idx::Phi_1_Real) = amrex::RandomNormal(0,1)/std::sqrt(2);
+        state_fab(i, j, k, Idx::Phi_1_Imaginary) = amrex::RandomNormal(0,1)/std::sqrt(2);
         
+        state_fab(i, j, k, Idx::res_0_Real) = 0;
+        state_fab(i, j, k, Idx::res_0_Imaginary) = 0;
+        state_fab(i, j, k, Idx::res_1_Real) = 0;
+        state_fab(i, j, k, Idx::res_1_Imaginary) = 0;
+        
+        state_fab(i, j, k, Idx::p_0_Real) = 0;
+        state_fab(i, j, k, Idx::p_0_Imaginary) = 0;
+        state_fab(i, j, k, Idx::p_1_Real) = 0;
+        state_fab(i, j, k, Idx::p_1_Imaginary) = 0;
+        
+        state_fab(i, j, k, Idx::Dp_0_Real) = 0;
+        state_fab(i, j, k, Idx::Dp_0_Imaginary) = 0;
+        state_fab(i, j, k, Idx::Dp_1_Real) = 0;
+        state_fab(i, j, k, Idx::Dp_1_Imaginary) = 0;
+        
+        state_fab(i, j, k, Idx::DDp_0_Real) = 0;
+        state_fab(i, j, k, Idx::DDp_0_Imaginary) = 0;
+        state_fab(i, j, k, Idx::DDp_1_Real) = 0;
+        state_fab(i, j, k, Idx::DDp_1_Imaginary) = 0;
+        
+        state_fab(i, j, k, Idx::propUp_0_Real) = 0;
+        state_fab(i, j, k, Idx::propUp_0_Imaginary) = 0;
+        state_fab(i, j, k, Idx::propUp_1_Real) = 0;
+        state_fab(i, j, k, Idx::propUp_1_Imaginary) = 0;
+        
+        state_fab(i, j, k, Idx::propDn_0_Real) = 0;
+        state_fab(i, j, k, Idx::propDn_0_Imaginary) = 0;
+        state_fab(i, j, k, Idx::propDn_1_Real) = 0;
+        state_fab(i, j, k, Idx::propDn_1_Imaginary) = 0;
+        
+        state_fab(i, j, k, Idx::Source_0_Real) = 0;
+        state_fab(i, j, k, Idx::Source_0_Imaginary) = 0;
+        state_fab(i, j, k, Idx::Source_1_Real) = 0;
+        state_fab(i, j, k, Idx::Source_1_Imaginary) = 0;
+        
+        state_fab(i, j, k, Idx::DSource_0_Real) = 0;
+        state_fab(i, j, k, Idx::DSource_0_Imaginary) = 0;
+        state_fab(i, j, k, Idx::DSource_1_Real) = 0;
+        state_fab(i, j, k, Idx::DSource_1_Imaginary) = 0;
+        
+        state_fab(i, j, k, Idx::ActionDensity) = 0;
+        state_fab(i, j, k, Idx::TopChargeDensity) = 0;
         
 }
 

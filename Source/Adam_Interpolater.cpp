@@ -67,13 +67,27 @@ adaminterp_interp (Box const& bx,
                     
                     Real Thetac_1_m0 = std::atan2(Uc_1_I_m0, Uc_1_R_m0);
                     
-                    Real Theta_0 = 1.0/6.0*(Thetac_0_0p + Thetac_0_00 + Thetac_0_0m);
-                    Real Theta_1 = 1.0/6.0*(Thetac_1_p0 + Thetac_1_00 + Thetac_1_m0);;
+                    //Real Theta_0 = 1.0/6.0*(Thetac_0_0p + Thetac_0_00 + Thetac_0_0m);
+                    //Real Theta_1 = 1.0/6.0*(Thetac_1_p0 + Thetac_1_00 + Thetac_1_m0);
                     
-                    fine(i,j,0,0+fcomp) = std::cos(Theta_0);
-                    fine(i,j,0,1+fcomp) = std::sin(Theta_0);
-                    fine(i,j,0,2+fcomp) = std::cos(Theta_1);
-                    fine(i,j,0,3+fcomp) = std::sin(Theta_1);
+                    Real Theta_0 = Thetac_0_00;
+                    Real Theta_1 = Thetac_1_00;
+                    
+                    if(i%2+j%2 == 0)
+                    {
+                        fine(i,j,0,0+fcomp) = std::cos(Theta_0);
+                        fine(i,j,0,1+fcomp) = std::sin(Theta_0);
+                        fine(i,j,0,2+fcomp) = std::cos(Theta_1);
+                        fine(i,j,0,3+fcomp) = std::sin(Theta_1);
+                    }
+                    else
+                    {
+                        fine(i,j,0,0+fcomp) = 1; //std::cos(Theta_0);
+                        fine(i,j,0,1+fcomp) = 0; //std::sin(Theta_0);
+                        fine(i,j,0,2+fcomp) = 1; //std::cos(Theta_1);
+                        fine(i,j,0,3+fcomp) = 0; //std::sin(Theta_1);
+                    }
+                    
                     
                     //fine(i,j,0,0+fcomp) = 1.0/6.0*(crse(ic,jc+1,0,0+ccomp)+crse(ic,jc,0,0+ccomp)+crse(ic,jc-1,0,0+ccomp));
                     //fine(i,j,0,1+fcomp) = 1.0/6.0*(crse(ic+1,jc,0,1+ccomp)+crse(ic,jc,0,1+ccomp)+crse(ic-1,jc,0,1+ccomp));
